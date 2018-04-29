@@ -15,7 +15,15 @@ var charts = [];
 
 var LEO = require("./lib/leo.js");
 var self = module.exports = $.extend({}, LEO, {
-	init: function(element, filterBarId) {
+	init: function(opts) {
+		if (opts) {
+			window.leo = $.extend(true, window.leo || {}, opts);
+			window.apiEndpoint = opts.apiEndpoint;
+			window.apiKey = undefined;
+		}
+		doStart();
+	},
+	initDashboard: function(element, filterBarId) {
 		element = $(element);
 		var filterBar = $("#" + filterBarId);
 
@@ -72,10 +80,23 @@ var self = module.exports = $.extend({}, LEO, {
 			$(filterSection).remove();
 		});
 
+		for (var f in leo.reportFilters) {
+			var filter = leo.reportFilters[f];
+			if (!filter.checkboxes && filter.value) {
+				filter.checkboxes = {};
+				if (typeof filter.value == "string") {
+					filter.checkboxes[filter.value] = true;
+				} else {
+					filter.value.map(f => filter.checkboxes[f] = true);
+				}
+			}
+			OptionActions.setFilter(filter.group || 'default', filter.id, filter.comparison, filter.value, filter.label, filter.checkboxes, filter.api, filter.isRequired, filter.singleValue, true);
+		}
+
 		charts = chartFigure.initAll($(element));
 
 		if (filterBar.length) {
-			ReactDom.render(<Filters />, document.getElementById(filterBarId));
+			ReactDom.render( < Filters / > , document.getElementById(filterBarId));
 		}
 
 		if ($(element).find("#leo-viewfilter").length) {
@@ -91,10 +112,9 @@ var self = module.exports = $.extend({}, LEO, {
 				});
 			});
 			OptionActions.setLegendToggles('default', toggles);
-			ReactDom.render(<Legend />, $(element).find("#leo-viewfilter").get(0));
+			ReactDom.render( < Legend / > , $(element).find("#leo-viewfilter").get(0));
 		}
 	},
-
 
 	showDashboard: function(dashboard, params) {
 		charts.map(function(chart) {
@@ -105,14 +125,13 @@ var self = module.exports = $.extend({}, LEO, {
 
 		$.get(window.leodashboardurl + "dashboards/" + dashboard, function(result) {
 			$("#leo-dashboard").html(result.replace(/^[\s\S]*<body[^>]*>/im, "").replace(/<\/body>[\s\S]*$/im, ""));
-			module.exports.init("#leo-dashboard", 'tool-bar');
+			module.exports.initDashboard("#leo-dashboard", 'tool-bar');
 		});
 
 		$('[data-dashboard].active').removeClass('active');
 		$('[data-dashboard="' + dashboard + '"]').addClass('active');
 		$('[data-dashboard="' + dashboard + '"]').closest('ul').closest('li').children('a').addClass('active-parent');
 	},
-
 
 	initMenu: function(id) {
 		window.onhashchange = function() {
@@ -135,11 +154,12 @@ var self = module.exports = $.extend({}, LEO, {
 		} else {
 			$($('nav').find('a')[0]).trigger('click');
 		}
+	},
+	initChart: function(figure, filters) {
+		return chartFigure.init(figure, filters);
 	}
 
 });
-
-document.getElementsByTagName("html")[0].style.display = 'none';
 
 /*yepnope1.5.x|WTFPL*/
 (function(a, b, c) {
@@ -311,63 +331,65 @@ document.getElementsByTagName("html")[0].style.display = 'none';
 	}
 })(window, document);
 
+function doStart() {
 
-yepnope([{
-	load: [
-		"__CDN__/leo-oem__VERSION__css",
-	]
-}, {
-	test: window.jQuery,
-	nope: [
-		"https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js",
-		"https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"
-	],
-	complete: function() {
-		window.Highcharts = Highcharts;
+	window.Highcharts = Highcharts;
 
-		$("html").show();
+	$("#leo-dashboard").show();
 
-		/*
-		   // close on mouse out 
-		   hs.Expander.prototype.onMouseOut = function (sender) {
-			  sender.close();
-		   };
-		   // close if mouse is not over on expand (using the internal mouseIsOver property)
-		   hs.Expander.prototype.onAfterExpand = function (sender) {
-			  if (!sender.mouseIsOver) sender.close();
-		   };
-		*/
+	/*
+	// close on mouse out
+	hs.Expander.prototype.onMouseOut = function (sender) {
+		sender.close();
+	};
+	// close if mouse is not over on expand (using the internal mouseIsOver property)
+	hs.Expander.prototype.onAfterExpand = function (sender) {
+		if (!sender.mouseIsOver) sender.close();
+	};
+	*/
 
-		var DateRangePicker = require('./jquery.leo.daterangepicker.js');
-		var DateRangePicker = require('./jquery-ui.multidatespicker.js');
+	var DateRangePicker = require('./jquery.leo.daterangepicker.js');
+	var DateRangePicker = require('./jquery-ui.multidatespicker.js');
 
-		$(function() {
+	chartFigure.runScripts();
 
-			chartFigure.runScripts();
+	module.exports.initDashboard("body", 'tool-bar');
+	module.exports.initMenu("leo-menu");
 
-			module.exports.init("body", 'tool-bar');
-			module.exports.initMenu("leo-menu");
+	$("body").on({
+		click: function(e) {
+			var data = $(this).data();
+			var checkboxes = JSON.parse(decodeURIComponent(data.checkboxes));
+			OptionActions.setFilter(data.group, data.id, data.comparison, data.value, data.label, checkboxes);
+		}
+	}, '#leoChartDetails header a.leo-addFilter');
 
-			$("body").on({
-				click: function(e) {
-					var data = $(this).data();
-					var checkboxes = JSON.parse(decodeURIComponent(data.checkboxes));
-					OptionActions.setFilter(data.group, data.id, data.comparison, data.value, data.label, checkboxes);
+	$('body').on({
+			click: function(e) {
+				var div = $("body #dialog-box");
+				if (div.length == 0) {
+					div = $('<div id="dialog-box"/>');
+					$('body').append(div)
 				}
-			}, '#leoChartDetails header a.leo-addFilter');
-
-			$('body').on({
-				click: function(e) {
-					var div = $("body #dialog-box");
-					if (div.length == 0) {
-						div = $('<div id="dialog-box"/>');
-						$('body').append(div)
+				var params = JSON.parse(decodeURIComponent($(this).data('params')));
+				var userClicked = JSON.parse(decodeURIComponent($(this).data('user_clicked')));
+				ReactDom.render( < TableView params = {
+						params
 					}
-					var params = JSON.parse(decodeURIComponent($(this).data('params')));
-					var userClicked = JSON.parse(decodeURIComponent($(this).data('user_clicked')));
-					ReactDom.render(<TableView params={params} userClicked={userClicked} />, div.get(0));
+					userClicked = {
+						userClicked
+					}
+					/>, div.get(0));
 				}
-			}, '#leoChartDetails header a.leo-tableView');
-		});
+			},
+			'#leoChartDetails header a.leo-tableView');
 	}
-}]);
+
+	yepnope([{
+		load: [
+			"__CDN__/css/leo-oem__VERSION__css",
+		],
+	}]);
+	$(function() {
+		$("#leo-dashboard").hide();
+	})

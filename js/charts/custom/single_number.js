@@ -22,6 +22,7 @@ module.exports = function (element, spec, options, my) {
 	var metric = spec.metric;
 	delete spec.metric;
 	my.optionsChange = function(that) {
+
 		that.columns = [];
 		if (timeframe) {
 			my.timeframe.id = timeframe;
@@ -32,17 +33,27 @@ module.exports = function (element, spec, options, my) {
 		});
 		that.metrics = singleNumber.metrics;
 
-		var skipSetFilter = false
-		that.filters.forEach(function(filter) {
-			if (filter.id == singleNumber.filter.id) {
-				skipSetFilter = true;
-			}
-		})
+		my.setFilter(singleNumber.filter, false);
+	}
 
-		if (!skipSetFilter) {
-			my.setFilter(singleNumber.filter, false);
+	my.updateTimeframe = function(that, filter) {
+
+		my.timeframe.value = filter.value
+		that.columns = []
+
+		if (filter.fromController) {
+			delete my.timeframe.id
+		} else if (timeframe) {
+			my.timeframe.id = timeframe
 		}
-	};
+
+		var singleNumber = my.getComparisonMetrics(my.timeframe, metric, {
+			notime: options.notime || (!spec.useTime),
+			asOf: asOf
+		})
+		that.metrics = singleNumber.metrics
+
+	}
 
 	var that = base(element, spec, options, my);
 
@@ -80,6 +91,7 @@ module.exports = function (element, spec, options, my) {
 
 
 	my.redraw = function() {
+
 		var showExtraNumbers = !!spec.growth || spec.extraNumbers.show,
 			asPercent = !!spec.asPercent,
 			column = my.dataSources[0].columns[that.metrics[0]],

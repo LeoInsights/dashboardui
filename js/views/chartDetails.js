@@ -1,17 +1,19 @@
 
 if (!chartDetails) {
-  
+
 	var chartDetails = {
 
 		htmlExpand: function(unused, params) {
-		
+
+			/*
+
 			var details = $('#leoChartDetails');
-				
+
 			if (details.length == 0) {
 				details = $('<div id="leoChartDetails"></div>');
 				$('body').append(details);
 			}
-			
+
 			details
 				.empty()
 				.append($('<header />').html(params.headingText))
@@ -35,9 +37,10 @@ if (!chartDetails) {
 				.bind('mouseleave', function() {
 					$(this).empty().css({left:0,top:0}).hide();
 				})
+			*/
 	
 		}
-	
+
 	}
 }
 

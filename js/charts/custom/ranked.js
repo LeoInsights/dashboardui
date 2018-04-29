@@ -1,8 +1,10 @@
-var base = require("../base.js");
-var React = require("react");
+var base = require("../base.js")
+var React = require("react")
+var DataAction = require("../../actions/data.js")
+
 
 module.exports = function (element, spec, options, my) {
-	
+
 	if (spec.select) {
 		options.select = spec.select;
 	} else {
@@ -12,17 +14,24 @@ module.exports = function (element, spec, options, my) {
 		var metrics = [];
 		spec.metrics.map(function(metric) {
 			if (metric.default) {
-				metrics.unshift({ field: metric.field} )
+				metrics.unshift({
+					id: metric.id || metric.field,
+					partitions: metric.partitions || undefined
+				})
 			} else {
-				metrics.push({ field: metric.field} )
+				metrics.push({
+					id: metric.id || metric.field,
+					partitions: metric.partitions || undefined
+				})
 			}
 			if (metric.label) {
 				select.options.push({
 					text: metric.label,
-					value: metric.field
+					value: metric.id || metric.field,
+					partitions: metric.partitions || undefined
 				})
 				if (!select.defaultValue || metric.default) {
-					select.defaultValue = metric.field
+					select.defaultValue = metric.id || metric.field
 				}
 			}
 		})
@@ -31,7 +40,24 @@ module.exports = function (element, spec, options, my) {
 		}
 		spec.metrics = metrics;
 	}
-	
+
+	if (spec.sort) {
+		options.sorts = spec.sort
+	} else {
+		options.sorts = spec.sort = [{
+			column: 1,
+			direction: 'desc'
+		}]
+	}
+
+	options = JSON.parse(JSON.stringify(options))
+
+	metrics.map((metric, index) => {
+		if (!select.defaultValue && metric.id == select.defaultValue) {
+			options.select.defaultIndex = index
+		}
+	})
+
 	if (!spec.controller) {
 		element.removeClass('is-controller')
 		element.removeClass('is-not-controller')
@@ -45,32 +71,78 @@ module.exports = function (element, spec, options, my) {
 		element.addClass('is-not-controller')
 		element.removeAttr('data-controller-selector')
 	}
-	
+
 	my = my || {};
-	var that = base(element, spec, options, my);
-	
-	
+
+	spec.columns = spec.dimensions || spec.columns
+
+	var that = base(element, spec, options, my)
+
+	spec.startDownload = function() {
+		DataAction.downloadData("export", null, my.dataSources[0])
+	}
+
 	my.redraw = function() {
-		var compareValue = null;
-		var data = my.getMetric(0);
-		var metricOffset = data.metricOffsets[0];
-		var column = data.mapping[data.metricOffsets[0]];
-		
-		return <div className="leo-ranked-chart" data-column_id={spec.columns[0]}>
-			
-			{
-				spec.controller && spec.controller.enabled === true
-				? <header></header>
-				: false
-			}
-			
+		var data = my.getMetric(0)
+			,metricOffset = data.metricOffsets[0]
+			,column = data.mapping[data.metricOffsets[0]]
+			,compareValue = Math.max.apply(Math, data.rows.map((row) => {
+				var rowTotal = 0
+				data.metricOffsets.forEach((offset) => {
+					rowTotal += row[offset]
+				})
+				row.push(rowTotal)
+				return rowTotal
+			}))
+
+		if (spec.sort[0] && spec.sort[0].column != 0) {
+			data.rows.sort((a,b) => {
+				var column = a.length-1
+				if (spec.sort[0].direction == 'asc') {
+					if (a[column] < b[column]) {
+						return -1
+					}
+					if (a[column] > b[column]) {
+						return 1
+					}
+				} else {
+					if (a[column] > b[column]) {
+						return -1
+					}
+					if (a[column] < b[column]) {
+						return 1
+					}
+				}
+				return 0
+			})
+		}
+
+		var colors = my.dashboardOptions.getDefaultColors()
+
+		var dimensionColors = ((typeof window.leo != 'undefined' && window.leo.charts && window.leo.charts.colors)
+			? window.leo.charts.colors
+			: {}
+		)
+
+		return (<div className="leo-ranked-chart" data-column_id={spec.columns[0]}>
+
 			<div>
 				{
 					options.select
-					? <select defaultValue={options.select.defaultValue} className={options.select.options.length < 2 ? 'disabled' : ''} onChange={ (e) => { my.changeChart({ metrics: [{field: e.target.value}]}); }}>
+					? <select defaultValue={options.select.defaultIndex} className={options.select.options.length < 2 ? 'disabled' : ''} onChange={ (e) => {
+							my.changeChart({
+								metrics: [
+									{
+										id: options.select.options[e.currentTarget.value].value,
+										partitions: options.select.options[e.currentTarget.value].partitions
+									}
+								],
+								sort: [(options.sorts[e.currentTarget.selectedIndex || 0]) || ({ column: 1, direction: 'desc' })]
+							})
+						}}>
 						{
 							options.select.options.map(function(option, index) {
-								return <option key={index} value={option.value}>{option.text}</option>
+								return <option key={index} value={index}>{option.text}</option>
 							})
 						}
 					</select>
@@ -81,38 +153,45 @@ module.exports = function (element, spec, options, my) {
 				<table>
 					<tbody>
 					{
-						data.rows.sort(function(a,b) {return parseFloat(0 + b[metricOffset]) - parseFloat(0 + a[metricOffset])}).map((row, i) => {
-							var label = row[0] || '\u00a0' //non-breaking space
-							var value = parseFloat(0 + row[metricOffset])
-							if (!compareValue && compareValue !== 0) {
-								compareValue = value;
-							}
-							var percentage = compareValue == 0 ? 0 : (value/compareValue)
-							return <tr key={label} onClick={(e) => {
+						data.rows.map((row, i) => {
+							var label = row[0] ? row[0].toString().trim() : '\u00a0' //non-breaking space
+							var value = row[row.length-1]
+							var percentage = (compareValue == 0 ? 0 : (value/compareValue))
+							return (<tr key={label} onClick={(e) => {
 									var target = $(e.currentTarget);
 									if (target.is(".active")) {
 										target.removeClass("active");
-										element.trigger('leo-click', [{active: false, series: row[0], value: row[1]}]); 
+										element.trigger('leo-click', [{active: false, series: row[0], value: value}]);
 									} else {
-										target.addClass('active').siblings().removeClass('active'); 
-										element.trigger('leo-click', [{active: true, series: row[0], value: row[1]}]); 
+										target.addClass('active').siblings().removeClass('active');
+										element.trigger('leo-click', [{active: true, series: row[0], value: value}]);
 									}
 								}}>
 								<td>
 									<div>
-										<span className={percentage<0 ? 'negative': ''} style={{width: Math.abs(percentage * 100) + "%"}}>{label}</span>
+										<span className={percentage < 0 ? 'negative': ''} style={{ width: Math.abs(percentage * 100) + "%" }}>
+											<label>{label}</label>
+											{
+												data.metricOffsets.map((offset, index) => {
+													var title = data.headers[0][index].value ? (data.headers[0][index].value + ': ' + column.formatter(row[offset])) : ''
+													var width = Math.abs( (row[offset] / row[row.length-1]) *100) + '%'
+													var background = dimensionColors[data.headers[0][index].value] || colors[index % colors.length]
+													return (<b key={index} title={title} style={{ width: width, background: background}}>&nbsp;</b>)
+												})
+											}
+										</span>
 									</div>
 								</td>
 								<td>
 									<div className="gray-zero">{column.formatter(value) || ''}</div>
 								</td>
-							</tr>
+							</tr>)
 						})
 					}
 					</tbody>
 				</table>
 			</div>
-		</div>
+		</div>)
 	};
 	return that;
 };

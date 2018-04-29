@@ -25,7 +25,7 @@ module.exports = React.createClass({
 		}
 
 		//force to array
-		if (typeof filter.value == 'string') {
+		if (!Array.isArray(filter.value)) {
 			if (filter.value == '') {
 				filter.value = [];
 			} else {
@@ -44,7 +44,7 @@ module.exports = React.createClass({
 		var comparison = filter.comparison;
 
 		var isDateRange = (filter.comparison && filter.comparison == 'between');
-		var isDynamic = (filter.value && filter.value[0] && !filter.value[0].match(/\d{4}-\d{2}-\d{2}/));
+		var isDynamic = (filter.value && filter.value[0] && !filter.value[0].toString().match(/\d{4}-\d{2}-\d{2}/));
 		var isDate = (filter.id.toLowerCase().indexOf('date.id') > -1 || filter.id.toLowerCase().indexOf('date._id') > -1 || filter.id.toLowerCase().indexOf('date.date') !== -1);
 
 		if (!isDateRange && isDate && !filter.singleChoice) {
@@ -64,7 +64,7 @@ module.exports = React.createClass({
 
 		return {
 			isDateRange: isDateRange,
-			//isDynamic: (filter.value && filter.value[0] && !filter.value[0].match(/\d{4}-\d{2}-\d{2}/)),
+			//isDynamic: (filter.value && filter.value[0] && !filter.value[0].toString().match(/\d{4}-\d{2}-\d{2}/)),
 			isDate: isDate,
 			//singleValue: (filter.singleValue),
 			updated: false,
@@ -182,7 +182,7 @@ module.exports = React.createClass({
 	},
 
 
-    render: function()  {
+	render: function()  {
 
 		var thisComponent = this;
 
@@ -199,46 +199,37 @@ module.exports = React.createClass({
 
 		var display = "";
 		if (filter.isRequired && filter.value[0] == missingRequired ) {
-			display = <em>none&nbsp;</em>;
+			display = <em>none</em>;
 		} else if (filter.value.length > 0) {
 			display = filter.value.join ? filter.value.join(this.state.isDateRange ? ' - ' : ', ') : filter.value;
 		} else {
-			display = <em>All&nbsp;</em>;
+			display = <em>All</em>;
 		}
 
-		return (
-			<li className={"filter-wrapper" + (this.state.showEditor ? ' active' : '') + " " + (this.props.className || '')} key={filter.id}  xonMouseLeave={this.delayedClose}>
-
+		return (<li ref="filter" className={"filter-wrapper" + (this.state.showEditor ? ' active' : '') + " " + (this.props.className || '')}>
 				{
 					this.state.showEditor
 					? <div className="mask" onClick={this.close}></div>
 					: false
 				}
-
 				<div className="filter-heading" onClick={this.state.showEditor ? this.close : this.open}>
-
 					{
 						this.props.removeFilter
 						? <i className="icon-cancel pull-right" onClick={this.props.removeFilter.bind(null, filter.id)} />
 						: false
 					}
-
 					<div className="filter-name">{filterName}</div>
-
 					<div className="filter-text filter-values">
 						{ !this.state.isDate && filter.comparison && filter.comparison != '=' && filter.comparison != 'in' ? filter.comparison + ' ' : '' }
 						{display}
 					</div>
 				</div>
-
 				{
 					this.state.showEditor
 					? <FilterSelect filter={filter} removeFilter={this.props.removeFilter} delayedClose={this.close} autoComplete={this.props.autoComplete} />
 					: false
 				}
-
-			</li>
-		);
+		</li>)
 
 	}
 

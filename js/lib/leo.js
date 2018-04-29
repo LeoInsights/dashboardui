@@ -1,4 +1,3 @@
-
 var numeral = require("numeral");
 var format = require("../format.js");
 
@@ -15,9 +14,9 @@ numeral.language('en-gb', {
 		billion: 'b',
 		trillion: 't'
 	},
-	ordinal: function (number) {
+	ordinal: function(number) {
 		var b = number % 10;
-		return (~~ (number % 100 / 10) === 1) ? 'th' :
+		return (~~(number % 100 / 10) === 1) ? 'th' :
 			(b === 1) ? 'st' :
 			(b === 2) ? 'nd' :
 			(b === 3) ? 'rd' : 'th';
@@ -30,8 +29,9 @@ numeral.language('en-gb', {
 
 module.exports = {
 	moment: require("moment"),
+	parse_date: require("../parse_date.js"),
 	numeral: require("numeral"),
-		
+
 	setLocale: function(locale) {
 		var self = this;
 		self.locale = locale;
@@ -44,14 +44,24 @@ module.exports = {
 			}
 		});
 	},
-	
+
 	format: {
-		money: format.get({format: "money"}),
-		count: format.get({format: "count"}),
-		number: format.get({format: "int"}),
-		percent: format.get({format: "percent"}),
+		money: format.get({
+			format: "money"
+		}),
+		count: format.get({
+			format: "count"
+		}),
+		number: format.get({
+			format: "int"
+		}),
+		percent: format.get({
+			format: "percent"
+		}),
 		percentChange: function(now, then) {
-			return (!now || !then) ? 'N/A' : format.get({format: "percent"})(((now - then) / then));
+			return (!now || !then) ? 'N/A' : format.get({
+				format: "percent"
+			})(((now - then) / then));
 		}
 	}
 };

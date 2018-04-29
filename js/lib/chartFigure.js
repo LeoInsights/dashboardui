@@ -24,7 +24,10 @@ var chartTypes = {
 	calculated_metric: require("../charts/custom/calculated_metric.js"),
 	table: require("../charts/custom/table.js"),
 	simpletable: require("../charts/custom/simpletable.js"),
-	html: require("../charts/html.js")
+	google_map: require("../charts/custom/google_map.js"),
+	html: require("../charts/html.js"),
+	filter_bar: require("../charts/custom/filter_bar.js"),
+	table: require("../charts/custom/data_table.js")
 }
 
 
@@ -53,15 +56,23 @@ $(function() {
 			var selector = $(this).data('controller-selector') || '*';
 			$('figure.leo-chart, figure.leo-html').filter(selector).not($(this)).each(function() {
 				if ($(this).leo()) {
+
+					window.dashboardFilters = (window.dashboardFilters || []).filter((dashboardFilter) => {
+						return dashboardFilter.id !== column_id
+					})
+
 					if (leo.active) {
-						$(this).leo().setFilter({
+						var filter = {
 							id: column_id,
 							value: leo.series,
 							fromController: true
-						});
+						}
+						$(this).leo().setFilter(filter)
+						window.dashboardFilters.push(filter)
 					} else {
 						$(this).leo().removeFilter(column_id);
 					}
+
 				}
 			});
 
@@ -79,14 +90,20 @@ exports.runScripts = function() {
 		charts: {
 			colors: {}
 		}
-	});
+	})
+
+	if (window.leo.defaultColors) {
+		OptionActions.setDefaultColors('default', window.leo.defaultColors)
+	}
+
 	for(var color in window.leo.charts.colors) {
-		OptionActions.setColor('default',color, window.leo.charts.colors[color]);
+		OptionActions.setColor('default', color, window.leo.charts.colors[color])
 	}
+
 	if (window.leo.refreshDefault) {
-		OptionActions.setDefaultRefresh('default',window.leo.refreshDefault);
+		OptionActions.setDefaultRefresh('default', window.leo.refreshDefault)
 	}
-	window.leo.refresh = DataActions.refresh;
+	window.leo.refresh = DataActions.refresh
 }
 
 
@@ -196,7 +213,7 @@ function chartFigure(figure, filters) {
 	}
 
 	if (figure.is(".leo-html")) {
-		figure.find('.split-box, .edit-button, .move-box, hr.vertical').remove();
+		figure.find('hr.vertical, .hover-menu').remove();
 		spec.type = figure.html().indexOf('text/x-leo-chart') != -1 ? "html" : '';
 		spec.template = figure.html();
 		figure.attr('data-html', figure.html())
@@ -216,11 +233,10 @@ function chartFigure(figure, filters) {
 			metrics: [],
 			filters: [],
 			rows: [],
-			//locale: leo.locale || (navigator.languages ? navigator.languages[0] : navigator.language)
 		}, spec), data).start();
 		figure.addClass("active");
 	} catch(e) {
-		console.log("Cannot initialize ", figure, e, chart);
+		console.error("Cannot initialize ", figure, e, chart);
 		var chart = false;
 	}
 

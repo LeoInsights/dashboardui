@@ -7,20 +7,81 @@ var Highcharts = require('highcharts');
 var DataAction = require("../../actions/data.js");
 
 var sort = require("../../sort.js");
-var format = require("../../format.js");
 
-var SimpleTable;
+var IdUtils = require('../../IdUtils.js')
+
 
 module.exports = function(element, spec, options, my) {
-	my = my || {};
+	my = my || {}
 
-	spec.dimensions = spec.dimensions || spec.columns
+	spec.advanced = spec.advanced || {}
+
+	if (spec.showTotals) {
+		spec.advanced.showTotals = spec.showTotals
+	}
+
+	spec.dimensions = spec.dimensions || []
+	spec.partitions = spec.partitions || []
+
+	// generate outColumns
+	spec.outColumns = spec.dimensions.concat(spec.metrics).map(function(column_id, index, allColumns) {
+
+		if (typeof column_id == 'object' && column_id.id) {
+			column_id = column_id.id
+		}
+		var parse = IdUtils.parse(column_id)
+		var details = IdUtils.details(column_id)
+		var useStar = (!!details && details.type != 'dimension' && details.type != 'attribute' && spec.partitions.length > 0)
+
+		spec.advanced = spec.advanced || {}
+
+		var label = ''
+		if (parse.label) {
+			label = parse.label.toString()
+		} else if (!details) {
+			label = '-'
+		} else {
+			if (parse.abs) {
+				label += 'ABS '
+			}
+			if (parse.rank) {
+				label += 'Rank '
+			}
+			if (parse.cumulative) {
+				label += 'Cumulative '
+			}
+			if (parse.percent) {
+				label += 'Percent '
+			}
+			if (parse.min) {
+				label += 'Minimum '
+			}
+			if (parse.max) {
+				label += 'Maximum '
+			}
+			if (parse.avg) {
+				label += 'Average '
+			}
+			if (label == '') {
+				label = details.parent.label + ' '
+			}
+			label += ((details.parent.label === details.label || details.label === 'Id') ? 'Count' : details.label)
+		}
+
+		label = (useStar ? '* ' : '') + label
+
+		return {
+			label: label,
+			value: column_id + (useStar ? ':*' : ''),
+			filter: (typeof spec.advanced.inlineFilters != 'undefined' && (spec.advanced.inlineFilters == true || (typeof spec.advanced.inlineFilters == 'object' && spec.advanced.inlineFilters.indexOf(column_id) !== -1))),
+			width: spec.advanced.columnWidths && spec.advanced.columnWidths[index] ? spec.advanced.columnWidths[index] : Math.floor(allColumns.length / 100) + '%'
+		}
+	})
 
 	var that = base(element, spec, options, my)
 
 	my.redraw = function() {
-		var compareValue = null;
-		return <SimpleTable spec = {
+		return <Table spec = {
 			spec
 		}
 		options = {
@@ -36,10 +97,10 @@ module.exports = function(element, spec, options, my) {
 	}
 
 	return that
-
 }
 
-var SimpleTable = React.createClass({
+
+var Table = React.createClass({
 
 			getInitialState: function() {
 				var sortBy = false;
@@ -397,9 +458,6 @@ var SimpleTable = React.createClass({
 				props = props || this.props
 
 				this.rows = props.data.rows;
-				if (props.spec.onNewData && props.spec.onNewData in window) {
-					this.rows = window[props.spec.onNewData](this.rows);
-				}
 
 				/** **************This should only happen on datasource change instead of every render*********************************** */
 
@@ -486,13 +544,6 @@ var SimpleTable = React.createClass({
 							type: 'string'
 						};
 					}
-					if (typeof col.formatter == "function") {
-						column.formatter = col.formatter;
-					} else if (col.formatter) {
-						column.formatter = format.get({
-							format: col.formatter
-						});
-					}
 					column.width = col.width || (Math.floor(100 / outColumns.length) + '%') // 60;
 					column.className = col.className || '';
 
@@ -503,7 +554,7 @@ var SimpleTable = React.createClass({
 						column.type = col.type;
 						column.label = col.label;
 					}
-					if (column.type === "metric") {
+					if (column.type === "metric" || column.type === "fact") {
 						column.className += " numeric";
 					}
 					if (col.filter === false) {
@@ -570,11 +621,6 @@ var SimpleTable = React.createClass({
 					});
 					this.outRows.push(newRow);
 				}
-
-				if (props.spec.onRender && props.spec.onRender in window) {
-					this.outRows = window[props.spec.onRender](this.outRows);
-				}
-
 				/** ***************************END*********************************** */
 			},
 
@@ -638,9 +684,6 @@ var SimpleTable = React.createClass({
 					this.totalRows = this.outRows.length
 
 					var totals = this.totals
-					if (this.props.spec.onTotals && this.props.spec.onTotals in window) {
-						totals = window[this.props.spec.onTotals](totals, this.outRows, this.rows);
-					}
 
 					if (this.props.data.error || this.rows.length == 0) {
 						return <span > {
@@ -648,29 +691,31 @@ var SimpleTable = React.createClass({
 						} < /span>;
 					}
 
-					let className = "leo-simpletable";
-					if (this.props.spec.style) {
-						className += " leo-simpletable-" + this.props.spec.style;
-					}
+					let className = ''
 
 					// sort the rows
 					var sortBy = this.state.sortBy;
 					if (sortBy || sortBy === 0) {
 						var mappings = {};
 						mappings[sortBy] = this.columns[sortBy];
-						this.outRows = this.outRows.sort(sort.getMultiCompare([{
-							direction: this.state.sortDir === 1 ? 'asc' : 'desc',
-							column: sortBy
-						}], mappings));
+						if (mappings[sortBy]) {
+							this.outRows = this.outRows.sort(sort.getMultiCompare([{
+								direction: this.state.sortDir === 1 ? 'asc' : 'desc',
+								column: sortBy
+							}], mappings));
+						}
 					}
 
-					return ( < div className = "simple-table-wrapper" >
+					return ( < div className = "data-table-wrapper" >
 							<
 							table className = {
-								className
+								className + (this.props.spec.advanced.showTotals ? ' has-totals' : '')
+							}
+							onScroll = {
+								this.handleScroll
 							} >
 							<
-							thead className = "table-head" >
+							thead >
 							<
 							tr className = "fixed-spacing" > {
 								this.columns.map((column, i) => {
@@ -685,29 +730,29 @@ var SimpleTable = React.createClass({
 									className = {
 										column.className
 									}
-									/>;
+									/>
 								})
 							} <
 							/tr> <
-							tr className = "title" >
+							tr className = "title text-left" >
 							<
-							td colSpan = {
+							th colSpan = {
 								this.columns.length
-							} >
-							<
-							i title = "download"
-							className = "icon-download"
-							onClick = {
-								this.exportData.bind(this, this.rows, this.columns)
-							} > < /i> <
+							} > {
+								/*
+																this.props.spec.advanced.showDownloadIcon
+																? <i title="download" className="icon-download pull-right" onClick={this.exportData.bind(this, this.rows, this.columns)}></i>
+																: false
+															*/
+							} <
 							span > {
-								this.props.options.title || this.props.spec.title
-							} < /span> <
-							/td> <
+								this.props.options.title || this.props.spec.title || this.props.spec.advanced.title || ''
+							} & nbsp; < /span> <
+							/th> <
 							/tr> <
 							tr className = "headers" > {
 								this.columns.map((column, i) => {
-										return ( < td key = {
+										return ( < th key = {
 												i
 											}
 											style = {
@@ -717,7 +762,7 @@ var SimpleTable = React.createClass({
 												}
 											}
 											className = {
-												column.className + (this.state.sortBy == i ? ' active' : '')
+												column.className + (this.state.sortBy == i ? ' active ' : ' ') + column.type
 											}
 											onClick = {
 												this.sortBy.bind(this, i)
@@ -731,14 +776,14 @@ var SimpleTable = React.createClass({
 											i className = {
 												(this.state.sortBy == i ? (this.state.sortDir == 1 ? "icon-up-dir" : "icon-down-dir") : "icon-sort")
 											} > < /i> <
-											/td>)
+											/th>)
 										})
 								} <
 								/tr> <
 								tr className = "filters" > {
 									this.columns.map((column, i) => {
-											if (column.type != "metric" && !column.className.match('numeric') && column.filter !== false) {
-												return ( < td key = {
+											if (column.type != "metric" && column.type != "fact" && !column.className.match('numeric') && column.filter !== false) {
+												return ( < th key = {
 														i
 													}
 													style = {
@@ -763,54 +808,50 @@ var SimpleTable = React.createClass({
 														"Filter " + column.label
 													}
 													/> <
-													/td>)
+													/th>)
 												}
 												else {
-													return <td key = {
-														i
+													return ( < th key = {
+															i
+														}
+														style = {
+															{
+																width: column.width,
+																maxWidth: column.width
+															}
+														}
+														className = {
+															column.className
+														} > & nbsp; < /th>)
 													}
-													className = {
-														column.className
-													}
-													/>
+												})
+										} <
+										/tr> <
+										/thead> <
+										tbody >
+										<
+										tr className = "fixed-spacing" > {
+											this.columns.map((column, i) => {
+												return <td key = {
+													i
 												}
+												style = {
+													{
+														width: column.width
+													}
+												}
+												className = {
+													column.className
+												}
+												/>
 											})
-									} <
-									/tr> <
-									/thead> <
-									/table> <
-									section className = {
-										"table-body" + (this.props.spec.showTotals ? ' has-totals' : '')
-									}
-									onScroll = {
-										this.handleScroll
-									} >
-									<
-									table className = {
-										className
-									} >
-									<
-									tbody >
-									<
-									tr className = "fixed-spacing" > {
-										this.columns.map((column, i) => {
-											return <td key = {
-												i
-											}
-											style = {
-												{
-													width: column.width
-												}
-											}
-											className = {
-												column.className
-											}
-											/>;
-										})
-									} <
-									/tr> <
-									tr className = "top-filler" > < td / > < /tr> {
-										this.outRows.slice(this.state.startRow, this.state.startRow + this.visibleRowCount).map((row, rowNum) => {
+										} <
+										/tr> <
+										tr className = "top-filler" > < td colSpan = {
+											this.columns.length
+										}
+										/></tr > {
+											this.outRows.slice(this.state.startRow, this.state.startRow + this.visibleRowCount).map((row, rowNum) => {
 													return ( < tr key = {
 															rowNum
 														} > {
@@ -825,7 +866,7 @@ var SimpleTable = React.createClass({
 																	}
 																}
 																className = {
-																	column.className
+																	column.className + ' ' + column.type
 																}
 																dangerouslySetInnerHTML = {
 																	{
@@ -838,12 +879,16 @@ var SimpleTable = React.createClass({
 														/tr>)
 													})
 											} <
-											tr className = "bottom-filler" > < td / > < /tr> <
+											tr className = "bottom-filler" > < td colSpan = {
+												this.columns.length
+											}
+											/></tr >
+											<
 											/tbody> {
-												this.props.spec.showTotals ?
+												this.props.spec.advanced.showTotals ?
 													< tfoot >
 													<
-													tr > {
+													tr className = "fixed-spacing" > {
 														this.columns.map((column, i) => {
 															return <td key = {
 																i
@@ -855,7 +900,7 @@ var SimpleTable = React.createClass({
 																}
 															}
 															className = {
-																column.className
+																column.className + ' ' + column.type
 															}
 															dangerouslySetInnerHTML = {
 																{
@@ -870,8 +915,7 @@ var SimpleTable = React.createClass({
 													false
 											} <
 											/table> <
-											/section> <
 											/div>)
 
-									}
-								});
+										}
+									})

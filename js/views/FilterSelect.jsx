@@ -1,12 +1,13 @@
 var React = require('react');
 
+//var parse_date = require('../parse_date.js').parse_date;
 var DateRangePicker = require('./DateRangePicker.jsx');
 
 
 module.exports = React.createClass({
 
 	operators: [
-		'in', '==', '=',
+		'==', '=',
 		'<>', '!=', '!',
 		'=>', '>=',
 		'=<', '<=',
@@ -29,7 +30,7 @@ module.exports = React.createClass({
 		}
 
 		//force to array
-		if (typeof filter.value == 'string') {
+		if (!Array.isArray(filter.value)) {
 			if (filter.value == '') {
 				filter.value = [];
 			} else {
@@ -51,7 +52,7 @@ module.exports = React.createClass({
 
 		return {
 			isDateRange: (filter.comparison && filter.comparison == 'between'),
-			isDynamic: (filter.value && filter.value[0] && !filter.value[0].match(/\d{4}-\d{2}-\d{2}/)),
+			isDynamic: (filter.value && filter.value[0] && !filter.value[0].toString().match(/\d{4}-\d{2}-\d{2}/)),
 			isDate: (filter.id.toLowerCase().indexOf('date.id') > -1 || filter.id.toLowerCase().indexOf('date._id') > -1 || filter.id.toLowerCase().indexOf('date.date') !== -1),
 			singleValue: (filter.singleValue),
 			showEditor: (this.props.editingFilter == filter.id),
@@ -84,38 +85,33 @@ module.exports = React.createClass({
 
 
 	componentDidMount: function() {
+
+		this._isMounted = true
 		this.initDatePicker();
 		if (this.refs.searchText) {
 			this.refs.searchText.select();
 		}
+
+		var offset = $(this.refs.filterSelect).offset()
+		if (offset.top > window.innerHeight / 2) {
+			$(this.refs.filterSelect).addClass('flow-up')
+		} else {
+			$(this.refs.filterSelect).removeClass('flow-up')
+		}
+		
+	},
+
+
+	componentWillUnmount: function() {
+
+		this._isMounted = false
+
 	},
 
 
 	componentDidUpdate: function() {
-		this.initDatePicker();
 
-		if (this.refs.searchResultsWrapper) {
-
-			var searchResultsWrapper = $(this.refs.searchResultsWrapper);
-
-			var height = searchResultsWrapper.height();
-			var scrollTop = searchResultsWrapper.scrollTop();
-			var pos = searchResultsWrapper.find('li.hover').position();
-
-			if (pos) {
-				if (pos.top < 90) {
-					searchResultsWrapper.scrollTop(scrollTop - 90)
-				}
-
-				if (pos.top > height) {
-					searchResultsWrapper.scrollTop(pos.top - height + scrollTop)
-				}
-
-				if (pos.top < 0) {
-					searchResultsWrapper.scrollTop(0);
-				}
-			}
-		}
+		this.initDatePicker()
 
 	},
 
@@ -146,7 +142,7 @@ module.exports = React.createClass({
 	autoComplete: function(filter_id, term) {
 		if (this.props.autoComplete) {
 			var thisComponent = this;
-			this.props.autoComplete(filter_id, term, function(results) {
+			this.props.autoComplete(filter_id, term, (results) => {
 				var searchResults = [];
 				for(var i = 0; i < results.suggestions.length; i++) {
 					var val = results.suggestions[i].value;
@@ -155,10 +151,12 @@ module.exports = React.createClass({
 						text: val
 					});
 				}
-				thisComponent.setState({
-					searchIndex: -1,
-					searchResults: searchResults
-				})
+				if (this._isMounted) {
+					this.setState({
+						searchIndex: -1,
+						searchResults: searchResults
+					})
+				}
 			}, this.props.filter.api);
 		}
 	},
@@ -346,7 +344,7 @@ module.exports = React.createClass({
 	},
 
 
-    render: function()  {
+	render: function()  {
 
 		var thisComponent = this;
 
@@ -369,7 +367,7 @@ module.exports = React.createClass({
 			var defaultValue = (filter.comparison && filter.comparison !== '=' ? filter.comparison + ' ' : '') + filter.value.join();
 		}
 
-		return <div className="filter-select">
+		return <div className="filter-select" ref="filterSelect">
 			{
 				this.state.isDate
 				?  (

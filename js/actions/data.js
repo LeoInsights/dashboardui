@@ -1,56 +1,102 @@
 var api = require("../webAPI.js");
 var format = require("../format.js");
 
-module.exports = require("../react/flux/action.js")(function (my,dispatcher) {
-	this.load = function(id, data) {
+module.exports = require("../react/flux/action.js")(function (my, dispatcher) {
+	this.load = function (id, data) {
 
 		var apiData = {
 			groups: data.groups,
 			partitions: data.partitions,
 			metrics: data.metrics,
 			filters: data.filters,
-			apikey:window.apiKey,
-			redshift: true,
+			apikey: window.apiKey,
+			redshift: ('useredshift' in window) ? window.useredshift : true,
 			numericFormat: true,
 			sort: data.sort
-		};
+		}
 
-//    sort[0][column]:f_airbill|count
-//    sort[0][direction]:asc
-
-		api.post("report", apiData, function(result) {
-			if (result === 'error') {
-				result = { error: true };
-			}
-			result.groups = data.groups;
-			result.partitions = data.partitions;
-			if(!result.error) {
-				for(var columnId in result.columns) {
-					result.columns[columnId].formatter = format.get(result.columns[columnId]);
+		if (apiData.metrics.length > 0) {
+			api.post("report", apiData, function (result) {
+				if (result === 'error') {
+					result = {
+						error: true
+					}
 				}
-				for(var i = 0; i < result.mapping.length; i++) {
-					result.mapping[i].formatter = format.get(result.mapping[i]);
+				result.groups = data.groups
+				result.partitions = data.partitions
+				if (!result.error) {
+					for (var columnId in result.columns) {
+						result.columns[columnId].formatter = format.get(result.columns[columnId])
+					}
+					for (var i = 0; i < (result.mapping || {}).length; i++) {
+						result.mapping[i].formatter = format.get(result.mapping[i])
+					}
 				}
-			}
-			dispatcher.emit("data.data", {id: id, data: result});
-		});
+				dispatcher.emit("data.data", {
+					id: id,
+					data: result
+				})
+			})
+		}
 	};
 
-	this.reset = function() {
+	this.reset = function () {
 		dispatcher.emit("data.reset");
 	};
-	this.refresh = function() {
+
+	this.refresh = function () {
 		dispatcher.emit("data.refresh");
 	}
 
-	this.downloadData = function(title, data) {
-		var downloadForm = $("#downloadform");
-		if(!downloadForm.length) {
-			downloadForm = $('<div id="downloadform" style="display: none"><form method="POST" action="'+window.apiEndpoint+'download" /></div>').appendTo("body");
+	this.downloadData = function (title, data, dataSource) {
+
+		if (!data && dataSource) {
+			var headerRow = []
+			dataSource.columnheaders.forEach((columnHeader) => {
+				headerRow.push(
+					dataSource.columns[columnHeader.id].label
+				)
+			})
+			data = [headerRow]
+
+			/*
+			TODO: sort
+			var position = dataSource.sorted[0].position
+			var direction = dataSource.sorted[0].direction
+			dataSource.rows.sort((a, b) => {
+				if (direction == 'asc') {
+
+				} else {
+					if (a[sortParams.position]) {
+
+					}
+				}
+			})
+			console.log('dataSource', dataSource)
+			*/
+
+			dataSource.rows.forEach((row) => {
+				data.push(
+					row.map((value, index) => {
+						return (dataSource.mapping[index].formatter) ? dataSource.mapping[index].formatter(value) : value
+					})
+				)
+			})
 		}
-		var inputtitle = $('<input type="hidden" name="title" value="'+title+'.csv"/>');
-		var inputdata = $('<input type="hidden" name="data" />');
-		inputdata.val(data.map(function(r) {return r.join(",");}).join("\r\n"));
-		downloadForm.find("form").empty().append(inputtitle).append(inputdata).submit();
+
+		if (data) {
+			var downloadForm = $("#downloadform");
+			if (!downloadForm.length) {
+				downloadForm = $('<div id="downloadform" style="display: none"><a>download</a>').appendTo("body");
+			}
+			var d = data.map(function (r) {
+				return r.join(",");
+			}).join("\r\n");
+			var a = $("a", downloadForm);
+			a.attr("target", "_blank");
+			a.attr("download", title + ".csv");
+			a.attr("href", 'data:text/csv;base64,' + btoa(d));
+			a[0].click();
+		}
 	}
 });

@@ -15,8 +15,8 @@ var util = require("util");
 var AWS = require('aws-sdk');
 var fs = require("fs");
 
-var liveVersion = ".1.10.5.";
-var devVersion = ".1.9.";
+var liveVersion = ".1.10.34.";
+var devVersion = ".1.10.";
 var cdn = "https://s3-us-west-2.amazonaws.com/cdnleo";
 var version = ".";
 
@@ -27,16 +27,15 @@ AWS.config.update({
 });
 
 gulp.task('less', [], function() {
-	return gulp.src(['../Insights/css/dashboard.less', 'fixed-data-table.css', "../Insights/views/static/css/fontello-codes.css", "../Insights/views/static/css/fontello-load.css"])
+	return gulp.src(['./css/LeoOEM.less'])
 		.pipe(replace(/__VERSION__/g, version))
 		.pipe(less().on('error', gutil.log))
 		.pipe(concat('leo-oem.css'))
 		.pipe(gulp.dest('./'));
 });
 gulp.task('copy', [], function() {
-	gulp.src('../Insights/views/static/css/font/**').pipe(gulp.dest('./font'));
-	gulp.src('./leo-oem.js').pipe(gulp.dest('../Insights/views/static/js/'));
-	gulp.src('./leo-oem.css').pipe(gulp.dest('../Insights/views/static/css/'));
+	gulp.src('./leo-oem.js').pipe(gulp.dest('../../static/js/'));
+	gulp.src('./leo-oem.css').pipe(gulp.dest('../../static/css/'));
 });
 
 var buildOpts = {
@@ -60,8 +59,8 @@ gulp.task('watch', ['less', 'copy'], function() {
 	b.on('log', function(log) {
 		gutil.log("Finished '" + gutil.colors.green('build') + "'", log);
 	});
-	gulp.watch('../Insights/css/**', ['less']);
-	gulp.watch(['../Insights/views/static/css/font/**', './leo-oem.js', './leo-oem.css'], ['copy']);
+	gulp.watch('../css/**', ['less']);
+	gulp.watch(['../css/font/**', './leo-oem.js', './leo-oem.css'], ['copy']);
 
 	return bundle(b);
 });
@@ -84,12 +83,14 @@ gulp.task('deploylive', ['setLiveVersion', 'build', 'putS3']);
 
 gulp.task('putS3', ["build"], function(done) {
 	uploadCDNFile('leo-oem' + version + 'js', "./leo-oem.js", false, function() {
-		uploadCDNFile('leo-oem' + version + 'css', "./leo-oem.css", false, function() {
-			uploadCDNFile('font/fontello' + version + 'eot', "./font/fontello.eot", false, function() {
-				uploadCDNFile('font/fontello' + version + 'svg', "./font/fontello.svg", false, function() {
-					uploadCDNFile('font/fontello' + version + 'ttf', "./font/fontello.ttf", false, function() {
-						uploadCDNFile('font/fontello' + version + 'woff', "./font/fontello.woff", false, function() {
-							done();
+		uploadCDNFile('css/leo-oem' + version + 'css', "./leo-oem.css", false, function() {
+			uploadCDNFile('font/fontello' + version + 'eot', "../font/fontello.eot", false, function() {
+				uploadCDNFile('font/fontello' + version + 'svg', "../font/fontello.svg", false, function() {
+					uploadCDNFile('font/fontello' + version + 'ttf', "../font/fontello.ttf", false, function() {
+						uploadCDNFile('font/fontello' + version + 'woff', "../font/fontello.woff", false, function() {
+							uploadCDNFile('font/fontello' + version + 'woff2', "../font/fontello.woff2", false, function() {
+								done();
+							});
 						});
 					});
 				});
@@ -156,5 +157,5 @@ function bundle(b) {
 		console.log(err);
 	}).pipe(source('./js/leo-oem.js')).pipe(rename({
 		dirname: ''
-	})).pipe(gulp.dest('./')).pipe(gulp.dest('../Insights/views/static/js/'));
+	})).pipe(gulp.dest('./')).pipe(gulp.dest('../static/js/'));
 }

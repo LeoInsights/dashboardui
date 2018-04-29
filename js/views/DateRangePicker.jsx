@@ -130,11 +130,12 @@ module.exports = React.createClass({
 				Object.keys(this.presets).map(function(preset) {
 					var dates = parse_date(preset).map(function(date) {
 						return thisComponent.formatDate(date);
-					}).join(' - ');
-					if (state.defaultValue == dates) {
+					}).join(' - ')
+					if (state.defaultValue == dates || state.defaultValue == (dates + ' - ' + dates)) {
+						state.defaultValue = dates
 						state.custom = false;
 					}
-				});
+				})
 			}
 		}
 
@@ -162,12 +163,12 @@ module.exports = React.createClass({
 
 
 	componentDidMount: function() {
-		this.initCalendars();
+		this.initCalendars()
 	},
 
 
 	componentDidUpdate: function(prevProps, prevState) {
-		this.initCalendars();
+		this.initCalendars()
 	},
 
 
@@ -176,7 +177,8 @@ module.exports = React.createClass({
 	initCalendars: function() {
 		var thisComponent = this;
 
-		if (this.state.custom && !$('#custom-date-range > div').hasClass('hasDatepicker')) {
+		//if (this.state.custom && !$('#custom-date-range > div').hasClass('hasDatepicker')) {
+		if (!$('#custom-date-range > div').hasClass('hasDatepicker')) {
 
 			$('#custom-date-range').dateRangePicker({
 				appendTo: $('#custom-date-range'),
@@ -208,9 +210,18 @@ module.exports = React.createClass({
 
 		this.loading = true;
 
+		/* fix calendar height */
+		if ($(this.refs.presetList).closest('.filter-select').hasClass('flow-up')) {
+			var off = $(this.refs.presetList).closest('.filter-wrapper').offset()
+			$(this.refs.presetList).css({ maxHeight: (off.top-400) })
+		} else {
+			var off = $(this.refs.presetList).offset()
+			$(this.refs.presetList).css({ maxHeight: 'calc(100vh - '+ Math.max(0, (off || {}).top+20)+'px)' })
+		}
+
 	},
 
-
+	/*
 	toggleCustom: function() {
 		var thisComponent = this;
 
@@ -221,6 +232,7 @@ module.exports = React.createClass({
 		}
 		this.setState({custom:!this.state.custom});
 	},
+	*/
 
 
 	setRange: function(dates, e) {
@@ -229,6 +241,10 @@ module.exports = React.createClass({
 
 		if (typeof dates == 'string') {
 			dates = [dates];
+		}
+
+		if (dates.length == 1 && dates[0].match(/\d{4}-\d{2}-\d{2}/)) {
+			dates[1] = dates[0]
 		}
 
 		this.props.setRange(dates);
@@ -312,79 +328,75 @@ module.exports = React.createClass({
 
 		String.prototype.capitalize = function(){
 			return this.toLowerCase().replace( /\b\w/g, function (m) {
-			    return m.toUpperCase();
-			});
-		};
+				return m.toUpperCase()
+			})
+		}
 
-		return <div>
-					<div className="heading">Timespan or Range</div>
+		return (<div>
 			{
-				this.state.custom
 
-				?
-					(
-						!this.state.atDateRange
-						? <div className="range-custom">
-							<fieldset className={!this.state.range ? 'active' : ''}>
-								<legend>Custom Timespan</legend>
-								<div>
-									Last <input ref="customLast" className="new-styled" type="number" min="0" defaultValue={this.state.last} onChange={this.changedCustom.bind(this, 'last')} />
-									<select ref="customPeriod" className="new-styled" defaultValue={this.state.period} onChange={this.changedCustom.bind(this, 'period')}>
-										{Object.keys(this.periods).map(function(period, i) {
-											return <option key={i} value={period}>{thisComponent.periods[period]}</option>
-										})}
-									</select>
-								</div>
-								<div>
-									<select ref="customToDate" className="new-styled" defaultValue={this.state.to_date} onChange={this.changedCustom.bind(this, 'to_date')}>
-										{Object.keys(this.toDates).map(function(toDate, i) {
-											return <option key={i} value={toDate}>{thisComponent.toDates[toDate]}</option>
-										})}
-									</select>
-								</div>
-								<div>
-									<label>
-										<input ref="customCurrent" type="checkbox" defaultChecked={this.state.current} onChange={this.changedCustom.bind(this, 'current')} /> Include current <span></span>
-									</label>
-								</div>
-							</fieldset>
+				!this.state.atDateRange
 
-							<fieldset className={this.state.range ? 'active' : ''}>
-								<legend>Custom Range</legend>
-								{/*<span id="custom-range-from" className="calendar"></span>
-								<span id="custom-range-to" className="calendar"></span>*/}
-								<div id="custom-date-range" className="calendar"></div>
-							</fieldset>
-
-							<div className="toggle-custom" onClick={this.toggleCustom}> <i className="icon-left-dir"></i> Preset </div>
+				? <div className="range-custom">
+					<fieldset className={!this.state.range ? 'active' : ''}>
+						<legend>Custom Timespan</legend>
+						<div>
+							Last <input ref="customLast" className="new-styled" type="number" min="0" defaultValue={this.state.last} onChange={this.changedCustom.bind(this, 'last')} />
+							<select ref="customPeriod" className="new-styled" defaultValue={this.state.period} onChange={this.changedCustom.bind(this, 'period')}>
+								{Object.keys(this.periods).map(function(period, i) {
+									return <option key={i} value={period}>{thisComponent.periods[period]}</option>
+								})}
+							</select>
 						</div>
-
-						: <div className="range-custom">
-							<fieldset className={!this.state.range ? 'active' : ''}>
-								<legend>Date Range</legend>
-								<div>
-									<input ref="dateRangeStart" className="new-styled" type="number" min="0" defaultValue={this.state.atDateRange[0]} onChange={this.changedAtDateRange.bind(this, 'start')} />
-									<span> &mdash; </span>
-									<input ref="dateRangeEnd" className="new-styled" type="number" min="0" defaultValue={this.state.atDateRange[1]} onChange={this.changedAtDateRange.bind(this, 'end')} />
-									<select ref="dateRangePeriod" className="new-styled" defaultValue={this.state.atDateRange[2]} onChange={this.changedAtDateRange.bind(this, 'period')}>
-										{Object.keys(this.periods).map(function(period, i) {
-											return <option key={i} value={period}>{period}</option>
-										})}
-									</select>
-									<span>ago</span>
-								</div>
-							</fieldset>
-
-							<fieldset className={this.state.range ? 'active' : ''}>
-								<legend>Custom Range</legend>
-								<div id="custom-date-range" className="calendar"></div>
-							</fieldset>
-
+						<div>
+							<select ref="customToDate" className="new-styled" defaultValue={this.state.to_date} onChange={this.changedCustom.bind(this, 'to_date')}>
+								{Object.keys(this.toDates).map(function(toDate, i) {
+									return <option key={i} value={toDate}>{thisComponent.toDates[toDate]}</option>
+								})}
+							</select>
 						</div>
-					)
+						<div>
+							<label>
+								<input ref="customCurrent" type="checkbox" defaultChecked={this.state.current} onChange={this.changedCustom.bind(this, 'current')} /> Include current <span></span>
+							</label>
+						</div>
+					</fieldset>
 
+					<fieldset className={this.state.range ? 'active' : ''}>
+						<legend>Custom Range</legend>
+						<div id="custom-date-range" className="calendar"></div>
+					</fieldset>
 
-				: <div className="range-presets">
+				</div>
+
+				: <div className="range-custom">
+					<fieldset className={!this.state.range ? 'active' : ''}>
+						<legend>Date Range</legend>
+						<div>
+							<input ref="dateRangeStart" className="new-styled" type="number" min="0" defaultValue={this.state.atDateRange[0]} onChange={this.changedAtDateRange.bind(this, 'start')} />
+							<span> &mdash; </span>
+							<input ref="dateRangeEnd" className="new-styled" type="number" min="0" defaultValue={this.state.atDateRange[1]} onChange={this.changedAtDateRange.bind(this, 'end')} />
+							<select ref="dateRangePeriod" className="new-styled" defaultValue={this.state.atDateRange[2]} onChange={this.changedAtDateRange.bind(this, 'period')}>
+								{Object.keys(this.periods).map(function(period, i) {
+									return <option key={i} value={period}>{period}</option>
+								})}
+							</select>
+							<span>ago</span>
+						</div>
+					</fieldset>
+
+					<fieldset className={this.state.range ? 'active' : ''}>
+						<legend>Custom Range</legend>
+						<div id="custom-date-range" className="calendar"></div>
+					</fieldset>
+
+				</div>
+			}
+
+			{
+				!this.state.atDateRange
+
+				? <div className="range-presets">
 					<div className="preset-list" ref="presetList">
 						<ul>
 							{
@@ -394,19 +406,21 @@ module.exports = React.createClass({
 										return thisComponent.formatDate(date)
 									}).join(' - ');
 									//if (parsed.length == 1) { parsed[1] = parsed[0]; }
-									return <li key={index}>
+									return (<li key={index}>
 										<button type="button" className={preset.toLowerCase() == thisComponent.state.defaultValue ? 'active' :''} onClick={thisComponent.setRange.bind(thisComponent, preset.capitalize())}>{preset.capitalize()}</button>
 										<button type="button" className={dates.toLowerCase() == thisComponent.state.defaultValue ? 'active' : ''} onClick={thisComponent.setRange.bind(thisComponent, parsed)}>{dates}</button>
-									</li>
+									</li>)
 								})
 							}
 						</ul>
 					</div>
-					<div className="toggle-custom" onClick={this.toggleCustom}> Custom <i className="icon-right-dir"></i> </div>
 				</div>
+
+				: false
 			}
 
-		</div>
+		</div>)
+
 
 	}
 

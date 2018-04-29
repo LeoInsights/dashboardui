@@ -1,5 +1,4 @@
-
-var FieldsStore = require('../stores/FieldsStore');
+var FieldsStore = require('./stores/FieldsStore');
 
 module.exports = {
 
@@ -17,11 +16,11 @@ module.exports = {
 		var parsed = {};
 		if (id) {
 			if (id.slice(0, 3) == 'fx(' || id[0] == '(') {
-				parsed[id.slice(0, id.lastIndexOf(')')+1)] = [];
-				id = id.slice(id.lastIndexOf(')')+1)
+				parsed[id.slice(0, id.lastIndexOf(')') + 1)] = [];
+				id = id.slice(id.lastIndexOf(')') + 1)
 			}
 			var parts = id.split('|');
-			for(var i=0;i<parts.length;i++) {
+			for (var i = 0; i < parts.length; i++) {
 				if (parts[i] != '') {
 					var temp = parts[i].split(':');
 					var name = temp.shift()
@@ -36,7 +35,8 @@ module.exports = {
 
 	raw: function(parsed) {
 		var parsed = this._check(parsed);
-		var prop; for (prop in parsed) break;
+		var prop;
+		for (prop in parsed) break;
 		return prop;
 	},
 
@@ -73,7 +73,7 @@ module.exports = {
 		var parsed = this._check(parsed);
 		//var aggregates = ['sum', 'avg', 'min', 'max', 'band', 'percent', 'cumulative'];
 		var aggregates = ['count', 'unique', 'sum', 'avg', 'min', 'max'];
-		for(var i=0;i<aggregates.length;i++) {
+		for (var i = 0; i < aggregates.length; i++) {
 			if (aggregates[i] in parsed) {
 				return aggregates[i];
 			}
@@ -100,7 +100,7 @@ module.exports = {
 		var parsed = this._check(parsed);
 		var all_transforms = ['band', 'percent', 'cumulative', 'rank', 'abs'];
 		var transforms = [];
-		for(var j in parsed) {
+		for (var j in parsed) {
 			if (all_transforms.indexOf(j) != -1) {
 				var transform = {}
 				transform[j] = parsed[j];
@@ -114,7 +114,7 @@ module.exports = {
 	build: function(parsed, prepend) {
 		var parsed = this._check(parsed);
 
-		for(var j in prepend) {
+		for (var j in prepend) {
 			delete(parsed[j]);
 		}
 
@@ -129,18 +129,18 @@ module.exports = {
 		}
 
 		var joined = [];
-		for(var i in parsed) {
-			joined.push(i + (parsed[i].length > 0 ? ':'+parsed[i].join(':') : ''));
-			for(var j in prepend) {
+		for (var i in parsed) {
+			joined.push(i + (parsed[i].length > 0 ? ':' + parsed[i].join(':') : ''));
+			for (var j in prepend) {
 				if (prepend[j]) {
-					joined.push(j + ':'+prepend[j]);
+					joined.push(j + ':' + prepend[j]);
 				}
 				delete(prepend[j]);
 			}
 		}
 
 		if (label) {
-			joined.push('label:'+label);
+			joined.push('label:' + label);
 		}
 
 		return joined.join('|');

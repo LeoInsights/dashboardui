@@ -76,106 +76,111 @@ module.exports = require("../react/flux/store.js")(function (my,dispatcher) {
 
 	this.watchGraph = (graph, onUpdate) => {
 		if (graph.requireControl) {
-			var hasControl = false;
+			var hasControl = false
 			for(var i=0;i<graph.filters.length;i++) {
 				if (graph.filters[i].fromController) {
-					hasControl = true;
-					break;
+					hasControl = true
+					break
 				}
 			}
 			if (!hasControl) {
-				graph.showNeedsFilter();
+				graph.showNeedsFilter()
 				return {
 					id: graph.id,
 					refresh: () => {},
 					stop: () => {}
 				}
 			} else {
-				graph.hideNeedsFilter();
+				graph.hideNeedsFilter()
 			}
 		}
 
-		graph.id = sourceId++;
-		graphs.push(graph);
-		if(!graph.refreshInterval) {
-			graph.refreshInterval = {minutes: 5};
+		graph.id = sourceId++
+		graphs.push(graph)
+		if (!graph.refreshInterval) {
+			graph.refreshInterval = {minutes: 5}
 		}
 
-		var watchIds = parseGraph(graph);
+		var watchIds = parseGraph(graph)
 
-		var newSources = {};
+		var newSources = {}
+
 		for(var d in graphSources) {
 			if(graphSources[d] !== graph.id) {
-				newSources[d] = graphSources[d];
+				newSources[d] = graphSources[d]
 			}
 		}
+
 		watchIds.forEach(function(id) {
-			newSources[id] = graph.id;
-		});
-		graphSources = newSources;
+			newSources[id] = graph.id
+		})
+
+		graphSources = newSources
 
 		var hasData = function() {
-			var hasAllData = true;
+			var hasAllData = true
 			watchIds.forEach(function(watching, i) {
-				if(watching in datas && datas[watching].timestamp >= dataSources[watching].lastLoadRequest) {
-
-				} else {
-					hasAllData = false;
+				if (!(watching in datas) || datas[watching].timestamp < dataSources[watching].lastLoadRequest) {
+					hasAllData = false
 				}
-			});
-			if(hasAllData) {
-				var data = [];
+			})
+
+			if (hasAllData) {
+				var data = []
 				watchIds.forEach(function(watching, i) {
-					data.push(datas[watching].data);
-				});
-				my.emit("loaded", graph.id);
-				onUpdate(data);
+					data.push(datas[watching].data)
+				})
+				my.emit("loaded", graph.id)
+				onUpdate(data)
 			}
 		}
+
 		watchIds.forEach(function(watching, i) {
 			my.on(graph.id, watching, function(data, other) {
 				datas[watching] = {
-						timestamp: new Date(),
-						data: data
+					timestamp: new Date(),
+					data: data
 				};
-				hasData();
-			});
-		});
-		hasData();
+				hasData()
+			})
+		})
+
+		hasData()
 
 		return {
 			id: graph.id,
 			refresh: function() {
 				watchIds.forEach(function(watching, i) {
-					repeaters[watching].start();
-				});
+					repeaters[watching].start()
+				})
 			},
 			stop: () => {
 				for(var i = graphs.length-1; i >= 0; i--) {
-					var g = graphs[i];
-					if(g.id === graph.id) {
-						graphs.splice(i, 1);
+					var g = graphs[i]
+					if (g.id === graph.id) {
+						graphs.splice(i, 1)
 					}
 				}
-				pruneDataSources();
-				my.off(graph.id);
+				pruneDataSources()
+				my.off(graph.id)
 			}
-		};
-	};
+		}
 
-});
+	}
+
+})
 
 
 function parseField(field) {
 	var i;
 	let fields = {
-			metrics: [],
-			groups: []
+		metrics: [],
+		groups: []
 	};
-	if(field.fields) {
+	if (field.fields) {
 		for(i = 0; i < field.fields.length; i++) {
 			var f = field.fields[i];
-			if(f.match(/^d_/)||f.match(/\.dd_/)||f.match(/\|band/)) {
+			if (f.match(/^d_/)||f.match(/\.dd_/)||f.match(/\|band/)) {
 				fields.groups.push(f);
 			} else {
 				fields.metrics.push(f);
@@ -184,7 +189,7 @@ function parseField(field) {
 	} else if(Array.isArray(field)) {
 		for(i = 0; i < field.length; i++) {
 			var f = field[i];
-			if(f.match(/^d_/)||f.match(/\.dd_/)||f.match(/\|band/)) {
+			if (f.match(/^d_/)||f.match(/\.dd_/)||f.match(/\|band/)) {
 				fields.groups.push(f);
 			} else {
 				fields.metrics.push(f);
@@ -229,7 +234,7 @@ function parseGraph(graph) {
 		graph.series.forEach(function(serie) {
 			serie.metrics.forEach(function(metric) {
 				metrics.push({
-					field: metric.id,
+					id: metric.id,
 					highcharts: serie.highcharts || { type: serie.type }
 				})
 			})
@@ -239,40 +244,43 @@ function parseGraph(graph) {
 
 	for(i =0; i < graph.metrics.length; i++) {
 		let metric = graph.metrics[i];
-		if(!metric.field) {
-			metric = {field: metric};
+		if (typeof metric == 'string') {
+			metric = { id: metric }
+		} else if (metric.field) {
+			metric.id = metric.field
+			delete metric.field
 		}
 
 		//Determine which Groups are needed
 		let myGroups = [];
-		let myColors = [];
+		let myPartitions = [];
 
-		if(metric.highcharts && metric.highcharts.type == 'pie') {
-			if(metric.colors) {//IF colors are set, then use that instead of columns
+		if (metric.highcharts && metric.highcharts.type == 'pie') {
+			if (metric.partitions) {//IF partitions are set, then use that instead of columns
 				metric.columns = [];
 			} else {
-				metric.colors = metric.columns;
+				metric.partitions = metric.columns;
 				metric.columns = [];
 			}
 		}
 
-		if(metric.columns) {
+		if (metric.columns) {
 			myGroups = metric.columns.slice();
 		} else {
 			myGroups = groups.slice(0);
 		}
-		if(metric.colors) {
-			var fields = parseField(metric.colors);
+		if (metric.partitions || metric.colors) {
+			var fields = parseField(metric.partitions || metric.colors);
 			for(j = 0; j < fields.groups.length; j++) {
-				myColors.push(fields.groups[j]);
+				myPartitions.push(fields.groups[j]);
 			}
 		} else if (partitions.length) {
-			myColors = partitions.slice(0);
+			myPartitions = partitions.slice(0);
 		}
 
 		//Determine which Filters are needed
 		let myFilters = filters.slice(0);
-		if(metric.filters) {
+		if (metric.filters) {
 			for(j = 0; j < metric.filters.length; j++) {
 				myFilters.push(metric.filters[j]);
 			}
@@ -280,10 +288,10 @@ function parseGraph(graph) {
 
 		//Determine which metrics are needed
 		let metrics = [];
-		metrics.push(metric.field);
+		metrics.push(metric.id || metric.field)
 
 		//Parse the tooltip
-		if(metric.tooltip) {
+		if (metric.tooltip) {
 			var fields = parseField(metric.tooltip);
 			for(j = 0; j < fields.groups.length; j++) {
 				myGroups.push(fields.groups[j]);
@@ -293,8 +301,9 @@ function parseGraph(graph) {
 			}
 		}
 
+		/* this makes no sense.  why would we parse a label?
 		//Parse the label
-		if(metric.label) {
+		if (false && metric.label) {
 			var fields = parseField(metric.label);
 			for(j = 0; j < fields.groups.length; j++) {
 				myGroups.push(fields.groups[j]);
@@ -303,12 +312,13 @@ function parseGraph(graph) {
 				metrics.push(fields.metrics[j]);
 			}
 		}
+		*/
 
 		//Generate a reportID
 		myGroups = myGroups.filter( (value,index,self) => {
 			return self.indexOf(value) === index;
 		}).sort();
-		myColors = myColors.filter( (value,index,self) => {
+		myPartitions = myPartitions.filter( (value,index,self) => {
 			return self.indexOf(value) === index;
 		}).sort();
 		myFilters = myFilters.map(function(e) {
@@ -323,11 +333,11 @@ function parseGraph(graph) {
 			return a.id.localeCompare(b.id);
 		});
 
-		var reportId = JSON.stringify([myGroups,myColors,myFilters]);
+		var reportId = JSON.stringify([myGroups, myPartitions, myFilters]);
 		if(!(reportId in dataSources)) {
 			dataSources[reportId] = {
 				groups: myGroups,
-				partitions: myColors,
+				partitions: myPartitions,
 				interval: graph.refreshInterval,
 				metrics: [],
 				filters: myFilters,
