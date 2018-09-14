@@ -43,18 +43,42 @@ module.exports = {
 	},
 
 	post: function(command, data, callback) {
+		var l;
+		if (!(typeof leo == 'undefined')) {
+			l = leo || {};
+		}
+
+		data.timestamp = moment().tz(window.leo && window.leo.timezone ? window.leo.timezone : moment.tz.guess()).format()
+
+		var config;
+		if (l.postDefaults == "form") {
+			config = {
+				dataType: "json",
+				contentType: "application/x-www-form-urlencoded",
+				dataTransform: function(d) {
+					return d;
+				},
+				cache: false
+			}
+		} else {
+			config = $.extend({
+				dataType: "json",
+				contentType: "application/json",
+				dataTransform: JSON.stringify,
+				cache: false
+			}, l.postDefaults);
+		}
 
 		lastUID[command] = new Date().valueOf();
 		data.apikey = apikey;
 		data.uid = lastUID[command];
-		data.timestamp = moment().tz(window.leo && window.leo.timezone ? window.leo.timezone : moment.tz.guess()).format()
 		$.ajax({
 			type: "post",
-			data: JSON.stringify(data),
-			cache: false,
+			data: config.dataTransform(data),
+			cache: config.cache,
 			url: apiEndpoint + command,
-			dataType: 'json',
-			contentType: 'application/json',
+			dataType: config.dataType,
+			contentType: config.contentType,
 			error: function(xhr, status, error) {
 				if (xhr.responseText) {
 					xhr = xhr.responseText

@@ -3,7 +3,7 @@ var format = require("../format.js");
 
 var Highcharts = require('highcharts');
 
-numeral.language('en-gb', {
+numeral.register('locale', 'en-gb', {
 	delimiters: {
 		thousands: ',',
 		decimal: '.'
@@ -26,6 +26,22 @@ numeral.language('en-gb', {
 	}
 });
 
+numeral.register('locale', 'nl', {
+	delimiters: {
+		thousands: '.',
+		decimal: ','
+	},
+	abbreviations: {
+		thousand: 'k',
+		million: 'm',
+		billion: 'b',
+		trillion: 't'
+	},
+	currency: {
+		symbol: '€'
+	}
+});
+
 
 module.exports = {
 	moment: require("moment"),
@@ -35,8 +51,8 @@ module.exports = {
 	setLocale: function(locale) {
 		var self = this;
 		self.locale = locale;
-		self.numeral.language(locale);
-		var lang = self.numeral.languageData();
+		self.numeral.locale(locale);
+		var lang = self.numeral.localeData();
 		Highcharts.setOptions({
 			lang: {
 				decimalPoint: lang.delimiters.decimal,

@@ -6,6 +6,7 @@ var Filters = require('./views/filters.jsx');
 var OptionActions = require("./actions/options.js");
 var DataActions = require("./actions/data.js");
 var TableView = require('./views/controls/tableView.jsx');
+var api = require("./webAPI.js");
 
 var chartFigure = require("./lib/chartFigure.js");
 
@@ -18,6 +19,7 @@ var self = module.exports = $.extend({}, LEO, {
 	init: function(opts) {
 		if (opts) {
 			window.leo = $.extend(true, window.leo || {}, opts);
+			api.setEndpoint(opts.apiEndpoint);
 			window.apiEndpoint = opts.apiEndpoint;
 			window.apiKey = undefined;
 		}
