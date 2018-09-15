@@ -7,7 +7,7 @@ module.exports = {
 		var tooltip = {}
 		if (column.format == "money") {
 			tooltip.valueDecimals = 0
-			tooltip.valuePrefix = numeral.languageData().currency.symbol
+			tooltip.valuePrefix = numeral.localeData().currency.symbol
 		}
 
 		if (metric.highcharts && metric.highcharts.type === "pie") {
@@ -20,7 +20,7 @@ module.exports = {
 				tooltip: tooltip
 			}, highchartSettings)
 
-			for(let j = 0; j < metricData.mapping.length; j++) {
+			for (let j = 0; j < metricData.mapping.length; j++) {
 				if (metricData.mapping[j].id == metricData.metric.id) {
 					var header = metricData.headers[0][metricData.headerMapping[0][j]]
 					let name = ("value" in header) ? header.value || "N/A" : metricData.columns[header.id].label
@@ -36,16 +36,18 @@ module.exports = {
 		} else {
 			var categories = chart.xAxis && chart.xAxis[0] && chart.xAxis[0].categories;
 			var categoryMap = {}
-			categories.forEach(function(cat,i) {
+			categories.forEach(function(cat, i) {
 				categoryMap[cat] = i
 			})
 			var series = []
 
-			for(let j = 0; j < metricData.mapping.length; j++) {
+			for (let j = 0; j < metricData.mapping.length; j++) {
 				if (metricData.mapping[j].id == metricData.metric.id) {
 					var header = metricData.headers[0][metricData.headerMapping[0][j]];
 					if (categories) {
-						var data = Array.apply(null, Array(categories.length)).map(()=>{return null;})
+						var data = Array.apply(null, Array(categories.length)).map(() => {
+							return null;
+						})
 					} else {
 						var data = []
 					}
@@ -58,7 +60,7 @@ module.exports = {
 						tooltip
 					}, highchartSettings)
 
-					for(let k = 0; k < metricData.rows.length; k++) {
+					for (let k = 0; k < metricData.rows.length; k++) {
 						if (categories) {
 							data[categoryMap[metricData.rows[k][0]]] = metricData.rows[k][j] ? metricData.rows[k][j] : 0
 						} else {

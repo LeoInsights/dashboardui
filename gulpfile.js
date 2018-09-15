@@ -58,8 +58,7 @@ gulp.task('watch', gulp.series(['less', 'copy'], function() {
 	b.on('log', function(log) {
 		gutil.log("Finished '" + gutil.colors.green('build') + "'", log);
 	});
-	gulp.watch('../css/**', ['less']);
-	gulp.watch(['../css/font/**', './leo-oem.js', './leo-oem.css'], ['copy']);
+	gulp.watch('../css/**', gulp.series('less'));
 
 	return bundle(b);
 }));
