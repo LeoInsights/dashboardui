@@ -1,33 +1,34 @@
 var React = require('react');
+var ReactDOM = require("react-dom");
+var PropTypes = require('prop-types');
 
 var parse_date = require('../parse_date.js').parse_date
 
-module.exports = React.createClass({
+class DRP extends React.Component {
 
-	contextTypes: {
-		show_dialog: React.PropTypes.func,
-		close_dialog: React.PropTypes.func
-	},
+	contextTypes = {
+		show_dialog: PropTypes.func,
+		close_dialog: PropTypes.func
+	};
 
 
-	periods: {
+	periods = {
 		days:	'Day',
 		weeks:	'Week',
 		months:	'Month',
 		quarters:'Quarter',
 		years:	'Year'
-	},
+	};
 
 
-	toDates: {
+	toDates = {
 		'-to-yesterday': 'to date of yesterday', //-to-yesterday
 		'-to-date': 'to date of today',  //-to-date
 		'period': 'to end of period', //
 		' plus future': 'no end date' // plus future
-	},
+    }
 
-
-	presets: {
+	presets = {
 						'today': [ 0, 'days',   'period', true],
 					'yesterday': [ 1, 'days',   'period', false],
 				  'last 7 days': [ 7, 'days',   'period', false],
@@ -69,20 +70,35 @@ module.exports = React.createClass({
 			'last year-to-date': [1, 'years',	 '-to-date',		false],
 	   'last year-to-yesterday': [1, 'years',	 '-to-yesterday',	false]
 
-	},
+	};
 
 
-	formatDate: function(date) {
+	formatDate(date) {
 		function pad(number) {
 			return ((number < 10) ? '0' : '') + number;
 		}
 		var date = (!date) ? new Date(): new Date(date);
 		return date.getUTCFullYear() + '-' + pad(date.getUTCMonth() + 1) + '-' + pad(date.getUTCDate());
-	},
+	}
 
+    state = {
+        defaultValue: '',
+        custom: true,
+        range: false,
+        last: 1,
+        period: 'days',
+        to_date: '',
+        current: 0,
+        start: null,
+        end: null,
+        atDateRange: false
+    };
 
-	getInitialState: function() {
+	constructor(props) {
+        super(props);
+    }
 
+    componentDidMount() {
 		var thisComponent = this;
 
 		var state = {
@@ -158,23 +174,21 @@ module.exports = React.createClass({
 			}
 		}
 
-		return state;
-	},
+		this.setState(state);
+
+        this.initCalendars()
+	}
 
 
-	componentDidMount: function() {
+	componentDidUpdate(prevProps, prevState) {
 		this.initCalendars()
-	},
+	}
 
 
-	componentDidUpdate: function(prevProps, prevState) {
-		this.initCalendars()
-	},
+	loading = false;
 
-
-	loading: false,
-
-	initCalendars: function() {
+	initCalendars() {
+        console.log("initCalendars()");
 		var thisComponent = this;
 
 		//if (this.state.custom && !$('#custom-date-range > div').hasClass('hasDatepicker')) {
@@ -184,7 +198,7 @@ module.exports = React.createClass({
 				appendTo: $('#custom-date-range'),
 				//setRange: [ this.state.start, this.state.end ],
 				firstDay: 0,
-				onChange: function() {
+				onChange() {
 					var range = $('#custom-date-range').dateRangePicker('getRange');
 					if (range) {
 						range.end = range.end || range.start;
@@ -219,10 +233,10 @@ module.exports = React.createClass({
 			$(this.refs.presetList).css({ maxHeight: 'calc(100vh - '+ Math.max(0, (off || {}).top+20)+'px)' })
 		}
 
-	},
+	}
 
 	/*
-	toggleCustom: function() {
+	toggleCustom() {
 		var thisComponent = this;
 
 		if (!this.state.custom) {
@@ -235,7 +249,7 @@ module.exports = React.createClass({
 	*/
 
 
-	setRange: function(dates, e) {
+	setRange(dates, e) {
 		$(this.refs.presetList).find('button').removeClass('active');
 		$(e.target).addClass('active');
 
@@ -252,10 +266,9 @@ module.exports = React.createClass({
 		if (this.props.delayedClose) {
 			this.props.delayedClose(true);
 		}
-	},
+	}
 
-
-	setCustomTimespan: function() {
+	setCustomTimespan() {
 		var date = 'Last ' + this.refs.customLast.value + ' ' + this.refs.customPeriod.value + (this.refs.customCurrent.checked ? '+current' : '')+(this.refs.customToDate.value == 'period' ? '' : this.refs.customToDate.value);
 		this.props.setRange([date]);
 
@@ -263,18 +276,16 @@ module.exports = React.createClass({
 		this.loading = false;
 		$('#custom-date-range').dateRangePicker("setRange", {start: new Date(test[0]), end: new Date(test[1] + ' 23:59:59') })
 		this.loading = true;
-	},
+	}
 
-
-	setCustomRange: function(range) {
+	setCustomRange(range) {
 		if (this.loading) {
 			this.setState({ range: true });
 			this.props.setRange(range);
 		}
-	},
+	}
 
-
-	changedCustom: function(which, e) {
+	changedCustom(which, e) {
 		this.setState({ range: false });
 		switch(which) {
 			case 'last':
@@ -292,10 +303,9 @@ module.exports = React.createClass({
 			break;
 		}
 		this.setCustomTimespan();
-	},
+	}
 
-
-	changedAtDateRange: function(which, e) {
+	changedAtDateRange(which, e) {
 		this.setState({ range: false });
 		switch(which) {
 			case 'start':
@@ -309,20 +319,18 @@ module.exports = React.createClass({
 			break;
 		}
 		this.setAtDateRange();
-	},
+	}
 
-
-	setAtDateRange: function() {
+	setAtDateRange() {
 		var date = '@daterange(' + this.refs.dateRangeStart.value + (this.refs.dateRangeStart.value && this.refs.dateRangeEnd.value ? '-' : '') + this.refs.dateRangeEnd.value + ' ' + this.refs.dateRangePeriod.value + ' ago)'
 		this.props.setRange([date]);
 		var dates = parse_date(date);
 		this.loading = false;
 		$('#custom-date-range').dateRangePicker("setRange", {start: new Date(dates[0]), end: new Date(dates[1] + ' 23:59:59') })
 		this.loading = true;
-	},
+	}
 
-
-	render: function() {
+	render() {
 
 		var thisComponent = this;
 
@@ -423,5 +431,6 @@ module.exports = React.createClass({
 
 
 	}
+}
 
-});
+module.exports = DRP;

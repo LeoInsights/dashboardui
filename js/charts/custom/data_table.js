@@ -100,9 +100,54 @@ module.exports = function(element, spec, options, my) {
 }
 
 
-var Table = React.createClass({
+class Table extends React.Component {
 
-			getInitialState: function() {
+			// getInitialState() {
+			// 	var sortBy = false;
+			// 	var sortDir = 1;
+			// 	if (this.props.spec && this.props.spec.sort && this.props.spec.sort[0]) {
+			// 		sortBy = (this.props.spec.sort[0].column || this.props.spec.sort[0].column === 0) ? this.props.spec.sort[0].column : sortBy;
+			// 		sortDir = this.props.spec.sort[0].direction == 'desc' ? -1 : 1
+			// 	}
+
+			// 	this.props.spec.startDownload = this.exportData
+
+			// 	return {
+			// 		filters: [],
+			// 		sortBy: sortBy, //false,
+			// 		sortDir: sortDir, //1
+			// 		startRow: 0
+			// 	};
+            // }
+            
+            state = {
+                filters: [],
+                sortBy: null,
+                sortDir: null,
+                startRow: 0
+            }
+
+            constructor(props) {
+                super(props);
+            }
+
+
+			componentWillMount() {
+				this.preProcess()
+			}
+
+			componentWillReceiveProps(props) {
+				this.preProcess(props)
+			}
+
+			componentDidMount() {
+				var scrolls = $('#leo-dashboard .simple-table-wrapper .table-body:not(.has-scroll-handler)');
+				var thisComponent = this
+				scrolls.each(function() {
+					$(this).scroll(function() {
+						thisComponent.sparkline.doChart($(this))
+					}).addClass('has-scroll-handler')
+				})
 				var sortBy = false;
 				var sortDir = 1;
 				if (this.props.spec && this.props.spec.sort && this.props.spec.sort[0]) {
@@ -111,45 +156,16 @@ var Table = React.createClass({
 				}
 
 				this.props.spec.startDownload = this.exportData
-
-				return {
-					filters: [],
-					sortBy: sortBy, //false,
-					sortDir: sortDir, //1
-					startRow: 0
-				};
-			},
-
-
-			componentWillMount: function() {
-				this.preProcess()
-			},
-
-
-			componentWillReceiveProps: function(props) {
-				this.preProcess(props)
-			},
-
-
-			componentDidMount: function() {
-				var scrolls = $('#leo-dashboard .simple-table-wrapper .table-body:not(.has-scroll-handler)');
-				var thisComponent = this
-				scrolls.each(function() {
-					$(this).scroll(function() {
-						thisComponent.sparkline.doChart($(this))
-					}).addClass('has-scroll-handler')
-				})
+                this.setState({ sortBy: sortBy, sortDir: sortDir });
 
 				this.componentDidUpdate()
-			},
+			}
 
-
-			componentDidUpdate: function() {
+			componentDidUpdate() {
 				this.adjustScrollFiller()
-			},
+			}
 
-
-			filterChange: function(col, e) {
+			filterChange(col, e) {
 				var filters = this.state.filters
 				filters[col] = e.currentTarget.value
 				this.setState({
@@ -157,10 +173,9 @@ var Table = React.createClass({
 				}, () => {
 					this.preProcess()
 				})
-			},
+			}
 
-
-			exportData: function(data, columns) {
+			exportData(data, columns) {
 
 				if (!data) {
 					data = this.rows
@@ -191,7 +206,7 @@ var Table = React.createClass({
 				});
 				outRows.push(newRow);
 
-				for (let i = 0; i < data.length; i++) {
+				for (let i = 0; i <data.length; i++) {
 					var row = data[i];
 					let newRow = [];
 					outColumns.forEach((col, i) => {
@@ -210,10 +225,9 @@ var Table = React.createClass({
 					outRows.push(newRow);
 				}
 				DataAction.downloadData("export", outRows);
-			},
+			}
 
-
-			sortBy: function(col, e) {
+			sortBy(col, e) {
 				this.setState({
 					sortBy: col,
 					sortDir: (col == this.state.sortBy ? -this.state.sortDir : -1)
@@ -223,10 +237,9 @@ var Table = React.createClass({
 						$(element).trigger('leo-after-sort', [$(element)]);
 					}, 500)
 				});
-			},
+			}
 
-
-			sparkline: {
+			sparkline = {
 				start: 0,
 				$tds: [],
 				fullLen: 0,
@@ -240,10 +253,10 @@ var Table = React.createClass({
 						sparkline.hasSparkline = true;
 
 						$('#leo-dashboard').on({
-							'leo-after-render': function(event, element) {
+							'leo-after-render'(event, element) {
 								sparkline.doChart(element);
 							},
-							'leo-after-sort': function(event, element) {
+							'leo-after-sort'(event, element) {
 								sparkline.doChart(element);
 							}
 						});
@@ -303,7 +316,7 @@ var Table = React.createClass({
 										hideDelay: 0,
 										shared: true,
 										padding: 0,
-										positioner: function(w, h, point) {
+										positioner(w, h, point) {
 											return {
 												x: -5,
 												y: -10
@@ -388,7 +401,7 @@ var Table = React.createClass({
 						data,
 						chart;
 
-					for (i = 0; i < len; i++) {
+					for (i = 0; i <len; i++) {
 						this.lastcall = $.now();
 						$td = $(this.$tds[i]);
 						stringdata = $td.data('sparkline');
@@ -421,12 +434,10 @@ var Table = React.createClass({
 						}
 					}
 				}
-
-			},
-
+			};
 
 			// provide value getter
-			getValue: function(row, column, format = true) {
+			getValue(row, column, format = true) {
 				let index = null;
 				let matches;
 
@@ -446,14 +457,13 @@ var Table = React.createClass({
 				} else {
 					return row[index];
 				}
-			},
+			}
 
+			colMapping = {};
+			rows = [];
+			columns = [];
 
-			colMapping: {},
-			rows: [],
-			columns: [],
-
-			preProcess: function(props) {
+			preProcess(props) {
 
 				props = props || this.props
 
@@ -464,7 +474,7 @@ var Table = React.createClass({
 				// Map IN columns
 				this.colMapping = {};
 				if (props.data.mapping) {
-					for (var i = 0; i < props.data.mapping.length; i++) {
+					for (var i = 0; i <props.data.mapping.length; i++) {
 						if (!(props.data.mapping[i].id in this.colMapping)) {
 							this.colMapping[props.data.mapping[i].id] = [];
 						}
@@ -477,7 +487,7 @@ var Table = React.createClass({
 				props.spec.outColumns.map((col) => {
 					if (col.value && typeof col.value === 'string' && col.value.match(/\:\*$/)) {
 						var value = col.value.replace(/\:\*$/, '');
-						for (var j = 0; j < props.data.headers[0].length; j++) {
+						for (var j = 0; j <props.data.headers[0].length; j++) {
 							var col2 = JSON.parse(JSON.stringify(col));
 							col2.label = col2.label.replace('*', props.data.headers[0][j].value);
 							col2.value = value + ':' + j;
@@ -505,7 +515,7 @@ var Table = React.createClass({
 						if (col.sparkline.length == 1 && col.sparkline[0].match(/\:\*$/)) {
 							var value = col.sparkline[0].replace(/\:\*$/, '');
 							col.sparkline = [];
-							for (var j = 0; j < props.data.headers[0].length; j++) {
+							for (var j = 0; j <props.data.headers[0].length; j++) {
 								col.sparkline.push(value + ':' + j)
 							}
 						}
@@ -608,7 +618,7 @@ var Table = React.createClass({
 
 				// Translate IN columns into OUT columns
 				this.outRows = []
-				for (let i = 0; i < this.rows.length; i++) {
+				for (let i = 0; i <this.rows.length; i++) {
 					var row = this.rows[i];
 					var newRow = [];
 					this.columns.forEach((column, i) => {
@@ -622,13 +632,12 @@ var Table = React.createClass({
 					this.outRows.push(newRow);
 				}
 				/** ***************************END*********************************** */
-			},
+			}
 
-
-			visibleRowCount: 300,
-			rowHeight: 24,
-
-			handleScroll: function(event) {
+			visibleRowCount= 300;
+            rowHeight= 24;
+            
+			handleScroll(event) {
 				var scrollTop = $(event.currentTarget).scrollTop(),
 					startRow = Math.floor(scrollTop / (this.rowHeight * (this.visibleRowCount / 3))) * (this.visibleRowCount / 3)
 
@@ -638,10 +647,9 @@ var Table = React.createClass({
 						startRow: startRow
 					})
 				}
-			},
+			}
 
-
-			adjustScrollFiller: function(startRow) {
+			adjustScrollFiller(startRow) {
 				startRow = startRow || this.state.startRow
 				var $element = $(this.props.element)
 				this.rowHeight = $element.find('.top-filler').next().height()
@@ -651,10 +659,9 @@ var Table = React.createClass({
 				$element.find('.bottom-filler').css({
 					height: this.rowHeight * (this.totalRows - startRow - this.visibleRowCount)
 				})
-			},
+			}
 
-
-			render: function() {
+			render() {
 
 					// Filter this new table
 					this.outRows = this.outRows.filter((row, i) => {
@@ -688,7 +695,7 @@ var Table = React.createClass({
 					if (this.props.data.error || this.rows.length == 0) {
 						return <span > {
 							this.props.spec.onEmpty || "No Data"
-						} < /span>;
+						} </span>;
 					}
 
 					let className = ''
@@ -706,18 +713,15 @@ var Table = React.createClass({
 						}
 					}
 
-					return ( < div className = "data-table-wrapper" >
-							<
-							table className = {
+					return ( <div className = "data-table-wrapper" >
+							<table className = {
 								className + (this.props.spec.advanced.showTotals ? ' has-totals' : '')
 							}
 							onScroll = {
 								this.handleScroll
 							} >
-							<
-							thead >
-							<
-							tr className = "fixed-spacing" > {
+							<thead >
+							<tr className = "fixed-spacing" > {
 								this.columns.map((column, i) => {
 									return <td key = {
 										i
@@ -732,11 +736,8 @@ var Table = React.createClass({
 									}
 									/>
 								})
-							} <
-							/tr> <
-							tr className = "title text-left" >
-							<
-							th colSpan = {
+							} </tr> <tr className = "title text-left" >
+							<th colSpan = {
 								this.columns.length
 							} > {
 								/*
@@ -744,15 +745,11 @@ var Table = React.createClass({
 																? <i title="download" className="icon-download pull-right" onClick={this.exportData.bind(this, this.rows, this.columns)}></i>
 																: false
 															*/
-							} <
-							span > {
+							} <span > {
 								this.props.options.title || this.props.spec.title || this.props.spec.advanced.title || ''
-							} & nbsp; < /span> <
-							/th> <
-							/tr> <
-							tr className = "headers" > {
+							} & nbsp; </span> </th> </tr> <tr className = "headers" > {
 								this.columns.map((column, i) => {
-										return ( < th key = {
+										return ( <th key = {
 												i
 											}
 											style = {
@@ -767,23 +764,18 @@ var Table = React.createClass({
 											onClick = {
 												this.sortBy.bind(this, i)
 											} >
-											<
-											span title = {
+											<span title = {
 												column.label
 											} > {
 												column.label
-											} < /span> <
-											i className = {
+											} </span> <i className = {
 												(this.state.sortBy == i ? (this.state.sortDir == 1 ? "icon-up-dir" : "icon-down-dir") : "icon-sort")
-											} > < /i> <
-											/th>)
+											} > </i> </th>)
 										})
-								} <
-								/tr> <
-								tr className = "filters" > {
+								} </tr> <tr className = "filters" > {
 									this.columns.map((column, i) => {
 											if (column.type != "metric" && column.type != "fact" && !column.className.match('numeric') && column.filter !== false) {
-												return ( < th key = {
+												return ( <th key = {
 														i
 													}
 													style = {
@@ -795,8 +787,7 @@ var Table = React.createClass({
 													className = {
 														column.className
 													} >
-													<
-													input type = "search"
+													<input type = "search"
 													value = {
 														this.state.filters[i] || ''
 													}
@@ -807,11 +798,10 @@ var Table = React.createClass({
 													placeholder = {
 														"Filter " + column.label
 													}
-													/> <
-													/th>)
+													/> </th>)
 												}
 												else {
-													return ( < th key = {
+													return ( <th key = {
 															i
 														}
 														style = {
@@ -822,15 +812,11 @@ var Table = React.createClass({
 														}
 														className = {
 															column.className
-														} > & nbsp; < /th>)
+														} > & nbsp; </th>)
 													}
 												})
-										} <
-										/tr> <
-										/thead> <
-										tbody >
-										<
-										tr className = "fixed-spacing" > {
+										} </tr> </thead> <tbody >
+										<tr className = "fixed-spacing" > {
 											this.columns.map((column, i) => {
 												return <td key = {
 													i
@@ -845,14 +831,12 @@ var Table = React.createClass({
 												}
 												/>
 											})
-										} <
-										/tr> <
-										tr className = "top-filler" > < td colSpan = {
+										} </tr> <tr className = "top-filler" > <td colSpan = {
 											this.columns.length
 										}
 										/></tr > {
 											this.outRows.slice(this.state.startRow, this.state.startRow + this.visibleRowCount).map((row, rowNum) => {
-													return ( < tr key = {
+													return ( <tr key = {
 															rowNum
 														} > {
 															this.columns.map((column, i) => {
@@ -875,20 +859,16 @@ var Table = React.createClass({
 																}
 																/>
 															})
-														} <
-														/tr>)
+														} </tr>)
 													})
-											} <
-											tr className = "bottom-filler" > < td colSpan = {
+											} <tr className = "bottom-filler" > <td colSpan = {
 												this.columns.length
 											}
 											/></tr >
-											<
-											/tbody> {
+											</tbody> {
 												this.props.spec.advanced.showTotals ?
-													< tfoot >
-													<
-													tr className = "fixed-spacing" > {
+													<tfoot >
+													<tr className = "fixed-spacing" > {
 														this.columns.map((column, i) => {
 															return <td key = {
 																i
@@ -909,13 +889,9 @@ var Table = React.createClass({
 															}
 															/>
 														})
-													} <
-													/tr> <
-													/tfoot> :
+													} </tr> </tfoot> :
 													false
-											} <
-											/table> <
-											/div>)
+											} </table> </div>)
 
 										}
-									})
+									}

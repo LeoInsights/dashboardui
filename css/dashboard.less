@@ -125,7 +125,15 @@ html, body {
 	top: 0; bottom: 0;
 	&.has-header {
 		top: 55px;
-	}
+    }
+    &.has-header2 {
+        top: 64px;
+    }
+    .has-header2 {
+        .has-header {
+            top: 119px !important;
+        }
+    }
 	&.has-footer {
 		bottom: 30px;
 	}
@@ -196,11 +204,11 @@ html, body {
 
 
 #tool-bar {
-	background: #676565;
+	/* background: #676565; */
 	font-family: 'Roboto', sans-serif;
-	color: white;
+	/* color: white; */
 	height: 55px;
-	margin-bottom: 10px;
+	margin-bottom: 0px;
 	.leo-filters {
 		display: none;
 		&.active {
@@ -216,10 +224,16 @@ html, body {
 
 		.filter-wrapper {
 			height: 55px;
+			width: auto !important;
+			border-right: 1px solid #eeeeee;
+			border-left: 1px solid #eeeeee;
 			.filter-heading {
 				height: 55px;
 				width: 225px;
-				padding: 8px;
+				padding-top: 8px;
+				padding-bottom: 8px;
+				padding-right: 20px;
+				padding-left: 20px;
 			}
 			.filter-select {
 				position: absolute;
@@ -228,10 +242,10 @@ html, body {
 				xdisplay: none;
 			}
 			.filter-name {
-				color: white;
+				color: #444444;
 			}
 			.filter-values {
-				color: #d2d1d9;
+				color: #333333;
 			}
 		}
 		.leo-timeframe-period {

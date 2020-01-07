@@ -17,7 +17,7 @@ var fs = require("fs");
 
 var liveVersion = ".1.10.34.";
 var devVersion = ".1.10.";
-var cdn = "https://s3-us-west-2.amazonaws.com/cdnleo";
+var cdn = "..";
 var version = ".";
 
 AWS.config.update({
@@ -34,13 +34,20 @@ gulp.task('less', function() {
 		.pipe(gulp.dest('./dist/'));
 });
 gulp.task('copy', done => {
+	fs.createReadStream('dist/leo-oem.js').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.js'));
+	fs.createReadStream('dist/leo-oem.css').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.css'));
+	fs.createReadStream('dist/leo-oem.css').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/css/leo-oem.css'));
 	done();
 });
 
 var buildOpts = {
 	entries: ['./js/dashboard.js'],
 	standalone: 'LEO',
-	transform: [babelify]
+	transform: [babelify.configure({
+		//presets: ["env", "react"],
+		presets: ["react"],
+		plugins: ["transform-object-rest-spread"]
+	  })]
 };
 var opts = assign({}, watchify.args, buildOpts);
 gulp.task('js', function() {

@@ -1,4 +1,4 @@
-var WebAPI = require('../WebAPI');
+var WebAPI = require('../webAPI');
 var LeoDispatcher = require('../dispatcher/LeoDispatcher');
 var LeoConstants = require('../constants/LeoConstants');
 var ActionTypes = LeoConstants.ActionTypes;

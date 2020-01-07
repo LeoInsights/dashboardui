@@ -9,7 +9,119 @@ var DataAction = require("../../actions/data.js");
 var sort = require("../../sort.js");
 var format = require("../../format.js");
 
-var SimpleTable;
+import AppBar from '@material-ui/core/AppBar';
+import GetAppIcon from '@material-ui/icons/GetApp';
+import Help from '@material-ui/icons/Help';
+import IconButton from '@material-ui/core/IconButton';
+import Print from '@material-ui/icons/Print';
+import Toolbar from '@material-ui/core/Toolbar';
+import Tooltip from '@material-ui/core/Tooltip';
+import Typography from '@material-ui/core/Typography';
+import { createMuiTheme, MuiThemeProvider, withStyles } from '@material-ui/core/styles';
+
+import { AgGridReact } from 'ag-grid-react';
+
+const drawerWidth = 260;
+
+const mainTheme = createMuiTheme({
+    palette: {
+        primary: { main: '#0067b4' }
+    },
+    typography: {
+        useNextVariants: true
+    }
+});
+
+const styles = theme => ({
+    buttonProgress: {
+        color: '#aaa',
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        marginTop: -12,
+        marginLeft: -12
+    },
+    overLay: {
+        backgroundColor: '#eee',
+        position: 'absolute',
+        top: '0',
+        right: '0',
+        bottom: '0',
+        left: '0',
+        margin: 'auto',
+        opacity: '0.5',
+        width: '100%',
+        zIndex: '9999'
+    },
+    root: {
+        overflowY: 'hidden'
+    },
+    grow: {
+        flexGrow: 1
+    },
+    paper: {
+        padding: 16
+    },
+    appBar: {
+        transition: theme.transitions.create(['margin', 'width'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen
+        }),
+        paddingLeft: 0
+    },
+    appBarShift: {
+        width: `calc(100% - ${drawerWidth}px)`,
+        marginLeft: drawerWidth,
+        transition: theme.transitions.create(['margin', 'width'], {
+            easing: theme.transitions.easing.easeOut,
+            duration: theme.transitions.duration.enteringScreen
+        }),
+        paddingLeft: 16,
+        paddingRight: 16
+    },
+});
+
+
+class BasicRenderer extends React.Component {
+    render() {
+        const { value } = this.props;
+
+        return <div 
+        style={{
+            width: '100%',
+            height: '100%',
+            paddingLeft: 0,
+            verticalAlign: 'middle',
+            textAlign:
+                (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact') ? 'right' : 'left',
+        }}
+        dangerouslySetInnerHTML={{ __html: this.props.colDef.formatter ? this.props.colDef.formatter(value) : value }}></div>;
+    }
+}
+
+class CustomPinnedRowRenderer extends React.Component {
+    render() {
+        var val = this.props.colDef.formatter ? this.props.colDef.formatter(this.props.value) : this.props.value;
+        return (
+            <div
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    paddingLeft: 0,
+                    fontWeight: 'bold',
+                    verticalAlign: 'middle',
+                    textAlign:
+                        (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact') ? 'right' : 'left',
+                    paddingTop: 0,
+                    color: '#444444'
+                }}
+            >
+                {val}
+            </div>
+        );
+    }
+}
+
 
 module.exports = function(element, spec, options, my) {
 	my = my || {};
@@ -39,9 +151,102 @@ module.exports = function(element, spec, options, my) {
 
 }
 
-var SimpleTable = React.createClass({
+@withStyles(styles)
+class SimpleTable extends React.Component {
 
-			getInitialState: function() {
+			// getInitialState() {
+			// 	var sortBy = false;
+			// 	var sortDir = 1;
+			// 	if (this.props.spec && this.props.spec.sort && this.props.spec.sort[0]) {
+			// 		sortBy = (this.props.spec.sort[0].column || this.props.spec.sort[0].column === 0) ? this.props.spec.sort[0].column : sortBy;
+			// 		sortDir = this.props.spec.sort[0].direction == 'desc' ? -1 : 1
+			// 	}
+
+			// 	this.props.spec.startDownload = this.exportData
+
+			// 	return {
+			// 		filters: [],
+			// 		sortBy: sortBy, //false,
+			// 		sortDir: sortDir, //1
+			// 		startRow: 0
+			// 	};
+            // }
+
+            state = {
+                filters: [],
+                sortBy: null,
+                sortDir: null,
+                startRow: 0
+            }
+
+            constructor(props) {
+                super(props);
+
+                let { classes, theme } = props;
+
+                ReactDOM.render( <MuiThemeProvider theme={mainTheme}>
+                        <AppBar className={classes.appBarDialog}>
+                            <Toolbar style={{ paddingRight: 0 }}>
+                                <Typography
+                                    variant="h6"
+                                    color="inherit"
+                                    className={classes.grow}
+                                >
+                                    {this.props.options.title || this.props.spec.title}
+                                </Typography>
+                                <Tooltip title="Print">
+                                    <IconButton
+                                        aria-label="Print"
+                                        color="inherit"
+                                        onClick={() => this.printData() }
+                                    >
+                                        <Print />
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Export to CSV">
+                                    <IconButton
+                                        aria-label="Export to CSV"
+                                        color="inherit"
+                                        onClick={() => this.exportData()}
+                                    >
+                                        <GetAppIcon />
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Help">
+                                    <IconButton
+                                        aria-label="Help"
+                                        color="inherit"
+                                        onClick={() => this.help()}
+                                    >
+                                        <Help />
+                                    </IconButton>
+                                </Tooltip>
+                            </Toolbar>
+                        </AppBar>
+                    </MuiThemeProvider>, 
+                    document.getElementById("leo-title-bar"));
+
+                if($('#leo-title-bar').length) {
+                    $(".leo-charts-wrapper").addClass('has-header2')
+                }
+            }
+
+			componentWillMount() {
+				this.preProcess()
+			}
+
+			componentWillReceiveProps(props) {
+				this.preProcess(props)
+			}
+
+			componentDidMount() {
+				var scrolls = $('#leo-dashboard .simple-table-wrapper .table-body:not(.has-scroll-handler)');
+				var thisComponent = this
+				scrolls.each(function() {
+					$(this).scroll(function() {
+						thisComponent.sparkline.doChart($(this))
+					}).addClass('has-scroll-handler')
+				})
 				var sortBy = false;
 				var sortDir = 1;
 				if (this.props.spec && this.props.spec.sort && this.props.spec.sort[0]) {
@@ -50,45 +255,16 @@ var SimpleTable = React.createClass({
 				}
 
 				this.props.spec.startDownload = this.exportData
-
-				return {
-					filters: [],
-					sortBy: sortBy, //false,
-					sortDir: sortDir, //1
-					startRow: 0
-				};
-			},
-
-
-			componentWillMount: function() {
-				this.preProcess()
-			},
-
-
-			componentWillReceiveProps: function(props) {
-				this.preProcess(props)
-			},
-
-
-			componentDidMount: function() {
-				var scrolls = $('#leo-dashboard .simple-table-wrapper .table-body:not(.has-scroll-handler)');
-				var thisComponent = this
-				scrolls.each(function() {
-					$(this).scroll(function() {
-						thisComponent.sparkline.doChart($(this))
-					}).addClass('has-scroll-handler')
-				})
+                this.setState({ sortBy: sortBy, sortDir: sortDir });
 
 				this.componentDidUpdate()
-			},
+			}
 
-
-			componentDidUpdate: function() {
+			componentDidUpdate() {
 				this.adjustScrollFiller()
-			},
+			}
 
-
-			filterChange: function(col, e) {
+			filterChange(col, e) {
 				var filters = this.state.filters
 				filters[col] = e.currentTarget.value
 				this.setState({
@@ -96,10 +272,122 @@ var SimpleTable = React.createClass({
 				}, () => {
 					this.preProcess()
 				})
-			},
+            }
+            
+            exportData2(doPrint) {
+                var outRows = [];
+                var newRow = [];
+        
+                var xtable = $(".leo-simpletable").eq(0);
+                var xheader = xtable.find("tr.headers");
+                var xh = xheader.find("span:visible");
+                var hc = 0;
+                var hidecols = [];
+                if(xheader.length == 0) {
+                    xheader = $(".ag-header-row").find(".ag-header-cell-text");
+                    xheader.each(function() {
+                        if($(this).is(":visible")) {
+                            hidecols[hc] = false;
+                            newRow.push('"' + $(this)[0].innerText.replace("\"","") + '"');
+                        }
+                        else {
+                            hidecols[hc] = true;
+                        }
+                        hc++;
+                    })
+                }
+                else {
+                    xheader.find("span").each(function() {
+                        //console.log($(this)[0].textContent);
+                        if($(this).is(":visible")) {
+                            hidecols[hc] = false;
+                            newRow.push('"' + $(this)[0].textContent.replace("\"","") + '"');
+                        }
+                        else {
+                            hidecols[hc] = true;
+                        }
+                        hc++;
+                    });
+                }
+        
+                outRows.push(newRow);
+        
+                newRow = [];
+                for(var i = 0; i < main_table.length; i++) {
+                    for(var j = 0; j < main_table[i].length; j++) {
+                        if(hidecols[j] == false) {
+                            if(main_table[i][j] === null) {
+                                newRow.push('""'); // null - blank.
+                            }
+                            else {
+                                if(outRows[0][newRow.length].indexOf("Expected") >= 0) {
+                                    // special case...this is in pennies for whatever reason, and we need it formatted as money.  this is because the value: is a function() for this column.
+                                        newRow.push('"' + (Math.round(toDecimal(main_table[i][j].toString())) / 100) + '"');
+                                }
+                                else {
+                                    newRow.push('"' + main_table[i][j].toString().replace("\"","") + '"');
+                                }
+                            }
+                        }
+                    }
+                    outRows.push(newRow);
+                    newRow = [];
+                }
+                for(var j = 0; j < main_totals.length; j++) {
+                    if(hidecols[j] == false) {
+                        if(main_totals[j] === null || typeof main_totals[j] === 'undefined') {
+                            newRow.push('""'); // null - blank.
+                        }
+                        else {
+                            if(outRows[0][newRow.length].indexOf("Adj ") >= 0 && (outRows[0][newRow.length].indexOf(",") == -1 && outRows[0][newRow.length].indexOf(",") == -1) && outRows[0][newRow.length].indexOf(" % ") == -1) {
+                                // for some reason on the Credits by Effective Date version, the Adjusted columns are still in pennies.  In this case, divide by 100.
+                                newRow.push('"' + (Math.round(toDecimal(main_totals[j].toString())) / 100) + '"');
+                            }
+                            else if(outRows[0][newRow.length].indexOf("Expected") >= 0) {
+                                // special case...this is in pennies for whatever reason, and we need it formatted as money.  this is because the value: is a function() for this column.
+                                newRow.push('"' + (Math.round(toDecimal(main_totals[j].toString())) / 100) + '"');
+                            }
+                            else {
+                                newRow.push('"' + main_totals[j].toString().replace("\"","") + '"');
+                            }
+                        }
+                    }
+                }
+                outRows.push(newRow);
+        
+                var title="export";
+                var data = outRows;
+        
+                var downloadForm = $("#downloadformRSIS");
+                // if (!downloadForm.length) {
+                if(doPrint == true) {
+                    downloadForm = $('<div id="downloadformRSIS" style="display: none"><form method="POST" target="_blank" action="./printPage.php?name=Import Totals" /></div>').appendTo("body");;
+                }
+                else {
+                    downloadForm = $('<div id="downloadformRSIS" style="display: none"><form method="POST" action="/api/warehouse2/download" /></div>').appendTo("body");
+                }
+                        // downloadForm = $('<div id="downloadformRSIS" style="display: none"><form method="POST" action="/api/warehouse2/download" /></div>').appendTo("body");
+                // }
+                var inputtitle = $('<input type="hidden" name="title" value="' + title + '.csv"/>');
+                var inputdata = $('<input type="hidden" name="data" />');
+                inputdata.val(data.map(function (r) {
+                    var rStr = r.join(",");
+                    rStr = rStr.replace(/<\/?[^>]+(>|$)/g, "");
+                    return rStr;
+                }).join("\r\n"));
+                downloadForm.find("form").empty().append(inputtitle).append(inputdata).submit();
+            }
+        
+            help() {
+                return;
+            }
 
+            printData() {
+                return this.exportData2(true);
+            }
 
-			exportData: function(data, columns) {
+			exportData(data, columns) {
+                return this.exportData2(false);
 
 				if (!data) {
 					data = this.rows
@@ -130,7 +418,7 @@ var SimpleTable = React.createClass({
 				});
 				outRows.push(newRow);
 
-				for (let i = 0; i < data.length; i++) {
+				for (let i = 0; i <data.length; i++) {
 					var row = data[i];
 					let newRow = [];
 					outColumns.forEach((col, i) => {
@@ -149,10 +437,9 @@ var SimpleTable = React.createClass({
 					outRows.push(newRow);
 				}
 				DataAction.downloadData("export", outRows);
-			},
+			}
 
-
-			sortBy: function(col, e) {
+			sortBy(col, e) {
 				this.setState({
 					sortBy: col,
 					sortDir: (col == this.state.sortBy ? -this.state.sortDir : -1)
@@ -162,27 +449,26 @@ var SimpleTable = React.createClass({
 						$(element).trigger('leo-after-sort', [$(element)]);
 					}, 500)
 				});
-			},
+			}
 
-
-			sparkline: {
+			sparkline = {
 				start: 0,
 				$tds: [],
 				fullLen: 0,
 				lastcall: 0,
 				hasSparkline: false,
 
-				init: function() {
+			    init: function() {
 					var sparkline = this;
 
 					if (!sparkline.hasSparkline) {
 						sparkline.hasSparkline = true;
 
 						$('#leo-dashboard').on({
-							'leo-after-render': function(event, element) {
+							'leo-after-render'(event, element) {
 								sparkline.doChart(element);
 							},
-							'leo-after-sort': function(event, element) {
+							'leo-after-sort'(event, element) {
 								sparkline.doChart(element);
 							}
 						});
@@ -242,7 +528,7 @@ var SimpleTable = React.createClass({
 										hideDelay: 0,
 										shared: true,
 										padding: 0,
-										positioner: function(w, h, point) {
+										positioner(w, h, point) {
 											return {
 												x: -5,
 												y: -10
@@ -315,9 +601,9 @@ var SimpleTable = React.createClass({
 					//if ($.now() - this.lastcall > 5000) {
 					sparkline.doChunk(sparkline);
 					//}
-				},
-
-				doChunk: function(sparkline) {
+                },
+                
+				doChunk: function (sparkline) {
 					var time = new Date(),
 						i,
 						len = sparkline.$tds.length,
@@ -327,7 +613,7 @@ var SimpleTable = React.createClass({
 						data,
 						chart;
 
-					for (i = 0; i < len; i++) {
+					for (i = 0; i <len; i++) {
 						this.lastcall = $.now();
 						$td = $(this.$tds[i]);
 						stringdata = $td.data('sparkline');
@@ -360,12 +646,9 @@ var SimpleTable = React.createClass({
 						}
 					}
 				}
+            }
 
-			},
-
-
-			// provide value getter
-			getValue: function(row, column, format = true) {
+			getValue(row, column, format = true) {
 				let index = null;
 				let matches;
 
@@ -385,14 +668,13 @@ var SimpleTable = React.createClass({
 				} else {
 					return row[index];
 				}
-			},
+			}
 
+			colMapping = {};
+			rows = [];
+			columns = [];
 
-			colMapping: {},
-			rows: [],
-			columns: [],
-
-			preProcess: function(props) {
+			preProcess(props) {
 
 				props = props || this.props
 
@@ -406,7 +688,7 @@ var SimpleTable = React.createClass({
 				// Map IN columns
 				this.colMapping = {};
 				if (props.data.mapping) {
-					for (var i = 0; i < props.data.mapping.length; i++) {
+					for (var i = 0; i <props.data.mapping.length; i++) {
 						if (!(props.data.mapping[i].id in this.colMapping)) {
 							this.colMapping[props.data.mapping[i].id] = [];
 						}
@@ -419,7 +701,7 @@ var SimpleTable = React.createClass({
 				props.spec.outColumns.map((col) => {
 					if (col.value && typeof col.value === 'string' && col.value.match(/\:\*$/)) {
 						var value = col.value.replace(/\:\*$/, '');
-						for (var j = 0; j < props.data.headers[0].length; j++) {
+						for (var j = 0; j <props.data.headers[0].length; j++) {
 							var col2 = JSON.parse(JSON.stringify(col));
 							col2.label = col2.label.replace('*', props.data.headers[0][j].value);
 							col2.value = value + ':' + j;
@@ -447,7 +729,7 @@ var SimpleTable = React.createClass({
 						if (col.sparkline.length == 1 && col.sparkline[0].match(/\:\*$/)) {
 							var value = col.sparkline[0].replace(/\:\*$/, '');
 							col.sparkline = [];
-							for (var j = 0; j < props.data.headers[0].length; j++) {
+							for (var j = 0; j <props.data.headers[0].length; j++) {
 								col.sparkline.push(value + ':' + j)
 							}
 						}
@@ -557,7 +839,7 @@ var SimpleTable = React.createClass({
 
 				// Translate IN columns into OUT columns
 				this.outRows = []
-				for (let i = 0; i < this.rows.length; i++) {
+				for (let i = 0; i <this.rows.length; i++) {
 					var row = this.rows[i];
 					var newRow = [];
 					this.columns.forEach((column, i) => {
@@ -576,13 +858,12 @@ var SimpleTable = React.createClass({
 				}
 
 				/** ***************************END*********************************** */
-			},
+			}
 
+			visibleRowCount = 300;
+			rowHeight = 30;
 
-			visibleRowCount: 300,
-			rowHeight: 24,
-
-			handleScroll: function(event) {
+			handleScroll(event) {
 				var scrollTop = $(event.currentTarget).scrollTop(),
 					startRow = Math.floor(scrollTop / (this.rowHeight * (this.visibleRowCount / 3))) * (this.visibleRowCount / 3)
 
@@ -592,10 +873,9 @@ var SimpleTable = React.createClass({
 						startRow: startRow
 					})
 				}
-			},
+			}
 
-
-			adjustScrollFiller: function(startRow) {
+			adjustScrollFiller(startRow) {
 				startRow = startRow || this.state.startRow
 				var $element = $(this.props.element)
 				this.rowHeight = $element.find('.top-filler').next().height()
@@ -605,11 +885,21 @@ var SimpleTable = React.createClass({
 				$element.find('.bottom-filler').css({
 					height: this.rowHeight * (this.totalRows - startRow - this.visibleRowCount)
 				})
-			},
+            }
+            
+            onGridReady = params => {
 
+            }
 
-			render: function() {
+            onFirstDataRendered = params => {
+                params.api.sizeColumnsToFit();
+            }
 
+            onGridSizeChanged = params => {
+                params.api.sizeColumnsToFit();
+            }
+
+			render() {
 					// Filter this new table
 					this.outRows = this.outRows.filter((row, i) => {
 						var matched = true;
@@ -637,15 +927,22 @@ var SimpleTable = React.createClass({
 
 					this.totalRows = this.outRows.length
 
-					var totals = this.totals
+                    var totals = this.totals
+                    
 					if (this.props.spec.onTotals && this.props.spec.onTotals in window) {
 						totals = window[this.props.spec.onTotals](totals, this.outRows, this.rows);
 					}
 
+                    var totals2 = [];
+                    totals2[0] = [];
+                    for(var i = 0; i < totals.length; i++) {
+                        totals2[0][i] = totals[i] ? totals[i] : '';
+                    }
+
 					if (this.props.data.error || this.rows.length == 0) {
-						return <span > {
-							this.props.spec.onEmpty || "No Data"
-						} < /span>;
+						 return <span> {
+						 	this.props.spec.onEmpty || "No Data"
+						 } </span>;
 					}
 
 					let className = "leo-simpletable";
@@ -664,214 +961,90 @@ var SimpleTable = React.createClass({
 						}], mappings));
 					}
 
-					return ( < div className = "simple-table-wrapper" >
-							<
-							table className = {
-								className
-							} >
-							<
-							thead className = "table-head" >
-							<
-							tr className = "fixed-spacing" > {
-								this.columns.map((column, i) => {
-									return <td key = {
-										i
-									}
-									style = {
-										{
-											width: column.width
-										}
-									}
-									className = {
-										column.className
-									}
-									/>;
-								})
-							} <
-							/tr> <
-							tr className = "title" >
-							<
-							td colSpan = {
-								this.columns.length
-							} >
-							<
-							i title = "download"
-							className = "icon-download"
-							onClick = {
-								this.exportData.bind(this, this.rows, this.columns)
-							} > < /i> <
-							span > {
-								this.props.options.title || this.props.spec.title
-							} < /span> <
-							/td> <
-							/tr> <
-							tr className = "headers" > {
-								this.columns.map((column, i) => {
-										return ( < td key = {
-												i
-											}
-											style = {
-												{
-													width: column.width,
-													maxWidth: column.width
-												}
-											}
-											className = {
-												column.className + (this.state.sortBy == i ? ' active' : '')
-											}
-											onClick = {
-												this.sortBy.bind(this, i)
-											} >
-											<
-											span title = {
-												column.label
-											} > {
-												column.label
-											} < /span> <
-											i className = {
-												(this.state.sortBy == i ? (this.state.sortDir == 1 ? "icon-up-dir" : "icon-down-dir") : "icon-sort")
-											} > < /i> <
-											/td>)
-										})
-								} <
-								/tr> <
-								tr className = "filters" > {
-									this.columns.map((column, i) => {
-											if (column.type != "metric" && !column.className.match('numeric') && column.filter !== false) {
-												return ( < td key = {
-														i
-													}
-													style = {
-														{
-															width: column.width,
-															maxWidth: column.width
-														}
-													}
-													className = {
-														column.className
-													} >
-													<
-													input type = "search"
-													value = {
-														this.state.filters[i] || ''
-													}
-													onChange = {
-														this.filterChange.bind(this, i)
-													}
-													className = "filter"
-													placeholder = {
-														"Filter " + column.label
-													}
-													/> <
-													/td>)
-												}
-												else {
-													return <td key = {
-														i
-													}
-													className = {
-														column.className
-													}
-													/>
-												}
-											})
-									} <
-									/tr> <
-									/thead> <
-									/table> <
-									section className = {
-										"table-body" + (this.props.spec.showTotals ? ' has-totals' : '')
-									}
-									onScroll = {
-										this.handleScroll
-									} >
-									<
-									table className = {
-										className
-									} >
-									<
-									tbody >
-									<
-									tr className = "fixed-spacing" > {
-										this.columns.map((column, i) => {
-											return <td key = {
-												i
-											}
-											style = {
-												{
-													width: column.width
-												}
-											}
-											className = {
-												column.className
-											}
-											/>;
-										})
-									} <
-									/tr> <
-									tr className = "top-filler" > < td / > < /tr> {
-										this.outRows.slice(this.state.startRow, this.state.startRow + this.visibleRowCount).map((row, rowNum) => {
-													return ( < tr key = {
-															rowNum
-														} > {
-															this.columns.map((column, i) => {
-																return <td key = {
-																	i
-																}
-																style = {
-																	{
-																		width: column.width,
-																		maxWidth: column.width
-																	}
-																}
-																className = {
-																	column.className
-																}
-																dangerouslySetInnerHTML = {
-																	{
-																		__html: column.formatter ? column.formatter(row[i]) : row[i]
-																	}
-																}
-																/>
-															})
-														} <
-														/tr>)
-													})
-											} <
-											tr className = "bottom-filler" > < td / > < /tr> <
-											/tbody> {
-												this.props.spec.showTotals ?
-													< tfoot >
-													<
-													tr > {
-														this.columns.map((column, i) => {
-															return <td key = {
-																i
-															}
-															style = {
-																{
-																	width: column.width,
-																	maxWidth: column.width
-																}
-															}
-															className = {
-																column.className
-															}
-															dangerouslySetInnerHTML = {
-																{
-																	__html: (column.formatter ? column.formatter(totals[i]) : totals[i]) || '&nbsp;'
-																}
-															}
-															/>
-														})
-													} <
-													/tr> <
-													/tfoot> :
-													false
-											} <
-											/table> <
-											/section> <
-											/div>)
+                    var gridOptions = {
+                        enableSorting: true,
+                        enableColResize: true,
+                        enableFilter: true,
+                        headerHeight: 48,
+                        rowHeight: 30,
+                        suppressPropertyNamesCheck: true
+                    };
 
-									}
-								});
+                    var numComparator = function(num1, num2) {
+                        var formatNum1 = parseFloat(num1.toString().replace(/[^0-9.-]/g, "")); 
+                        var formatNum2 = parseFloat(num2.toString().replace(/[^0-9.-]/g, ""));
+                        if (formatNum1 === null && formatNum2 === null) {
+                          return 0;
+                        }
+                        if (formatNum1 === null) {
+                          return -1;
+                        }
+                        if (formatNum2 === null) {
+                          return 1;
+                        }
+                        return formatNum1 - formatNum2;
+                    };
+            
+                    var columnDefs = this.columns.map((column, i) => {
+                        var headerClass = column.type == 'fact' || column.type == 'metric' ? 'rightJustifyHeader' : null;
+                        var typ = column.type == 'fact' || column.type == 'metric' ? 'rightJustifyHeader' : null;
+                        return {                   
+                            minWidth: 70,
+                            headerName: column.label,
+                            field: i.toString(),
+                            type: typ,
+                            pinnedRowCellRenderer: 'customPinnedRowRenderer',
+                            cellRenderer: 'basicRenderer',
+                            formatter: column.formatter,
+                            colType: column.type,
+                            headerClass: headerClass
+                        }
+                    });
+                    var rows = this.outRows.map(r=>{
+                        var rw = {};
+                        for(var i = 0; i < r.length; i++) {
+                            rw[i.toString()] = r[i];
+                        }
+                        return rw;
+                    });
+                    var c = JSON.stringify(this.columns).substring(0,500);
+                    var o = JSON.stringify(rows).substring(0,500);
+					return ( 
+                        <div className="simple-table-wrapper">
+
+                        {/* <table className={className}>
+                        <thead>
+                            <tr className="title">
+                                <td><span title="download">{this.props.options.title || this.props.spec.title}</span><i className="icon-download" onClick={this.exportData.bind(this, rows, this.columns)}></i></td>
+                            </tr>
+                        </thead>
+                        </table> */}
+                        <div
+                            style={{
+                                width: '100%',
+                                height: '100%'
+                            }}
+                            className="ag-theme-balham my-grid"
+                        >
+                            <AgGridReact
+                                    style={{ lineHeight: 20 }}
+                                    columnDefs={columnDefs} /* this.state.columnDefs */
+                                    rowData={rows}
+                                    gridOptions={gridOptions}
+                                    enableColResize={true}
+                                    frameworkComponents={{
+                                        customPinnedRowRenderer: CustomPinnedRowRenderer,
+                                        basicRenderer: BasicRenderer 
+                                    }}
+                                    onGridSizeChanged={this.onGridSizeChanged.bind(this)}
+                                    onGridReady={this.onGridReady.bind(this)}
+                                    onFirstDataRendered={this.onFirstDataRendered.bind(this)}
+                                    pinnedBottomRowData={
+                                        totals2
+                                    }
+                            />
+                        </div>
+                    </div>
+                    )
+                }
+}

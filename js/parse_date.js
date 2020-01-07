@@ -17,8 +17,8 @@ function getGroups(source) {
 		"funcParams": 5,
 		"fieldName": 7,
 		"suffix": 8
-	};
-	var chunks = source.match(/^([ 0-9+-]*)?@(([a-z_]+)(\(([a-z0-9\-_,]+)\))?)(\.([a-z0-9_]+))?([+-][ 0-9+-]*)?$/i);
+    };
+    var chunks = source.match(/^([ 0-9+-]*)?@(([a-z_]+)(\(([a-z0-9\-_,]+)\))?)(\.([a-z0-9_]+))?([+-][ 0-9+-]*)?$/i);
 	var groups = {};
 	for (gname in named_groups) {
 		groups[gname] = chunks[named_groups[gname]];
@@ -27,7 +27,7 @@ function getGroups(source) {
 }
 
 function parse_special(datestr, asOfDate) {
-	asOfDate = asOfDate || undefined;
+    asOfDate = asOfDate || undefined;
 	var groups = getGroups(datestr);
 	switch (groups.func.toLowerCase()) {
 	case "today":

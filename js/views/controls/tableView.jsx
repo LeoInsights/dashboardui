@@ -1,49 +1,52 @@
 var React = require('react');
-var table = require("../../charts/custom/table.js");
+var table = require('../../charts/custom/table.js');
 
-module.exports = React.createClass({
-	
-	getInitialState: function() {
-		return {};
-	},
-	
-	
-	componentWillUnmount: function() {
-		//this.chart.stop();
-	},
+class TableView extends React.Component {
+    state = {};
 
-	
-	componentDidMount: function() {
-		var columns = this.props.params.rowDims
-		var metrics = this.props.params.rowMetrics || this.props.params.columnMetrics
-		var partitions = this.props.params.columnDims
-		var filters = this.props.params.filters
-				
-		var params = $.extend(true,
-		{
-			columns: [],
-			metrics: [],
-			partitions: [],
-			filters: [],
-	    },
-		{
-			columns: columns,
-			metrics: metrics,
-			partitions: partitions,
-			filters: filters,
-		});
-		
-		this.chart = table($(this.refs.body), params, {width: 500, height: 200}).start();
-	},
-	
-	
-	close: function() {
-		React.unmountComponentAtNode($(this).parent().get(0));
-	},
-	
-	
-	copyToClipboard: function() {
-		/*
+    componentWillUnmount() {
+        //this.chart.stop();
+    }
+
+    componentDidMount() {
+        var columns = this.props.params.rowDims;
+        var metrics =
+            this.props.params.rowMetrics || this.props.params.columnMetrics;
+        var partitions = this.props.params.columnDims;
+        var filters = this.props.params.filters;
+
+        var params = $.extend(
+            true,
+            {
+                columns: [],
+                metrics: [],
+                partitions: [],
+                filters: []
+            },
+            {
+                columns: columns,
+                metrics: metrics,
+                partitions: partitions,
+                filters: filters
+            }
+        );
+
+        this.chart = table($(this.refs.body), params, {
+            width: 500,
+            height: 200
+        }).start();
+    }
+
+    close() {
+        React.unmountComponentAtNode(
+            $(this)
+                .parent()
+                .get(0)
+        );
+    }
+
+    copyToClipboard() {
+        /*
 		//The Report Store is in charge of output
 		var exportData = ReportStore.exportData(true);
 		var copyReportInput = $("#copyReportInput");
@@ -52,12 +55,11 @@ module.exports = React.createClass({
 		}
 		copyReportInput.val(exportData);
 		/* */
-	},
-	
-	
-	downloadTable: function() {
-		/*
-		exportReport: function(a) {	
+    }
+
+    downloadTable() {
+        /*
+		exportReport(a) {	
 		//The Report Store is in charge of output
 		var exportData = ReportStore.exportData();
 
@@ -75,23 +77,35 @@ module.exports = React.createClass({
 			a.attr("download","Datawarehouse Export.csv").attr("href", "data:text/csv;charset=utf-8,\ufeff" + encodeURIComponent(exportData));
 		}
 		/* */
-	},
+    }
 
-	
-	render: function() {
-		return <div className="dialog-box">
-			<header>
-				Table View
-				<i className="close pull-right icon-cancel" onClick={this.close}></i>
-			</header>
-			<div className="body" ref="body"></div>
-			<footer>
-				{/*<button type="button" onClick={this.copyToClipboard}>copy to clipboard</button>
+    render() {
+        return (
+            <div className="dialog-box">
+                <header>
+                    Table View
+                    <i
+                        className="close pull-right icon-cancel"
+                        onClick={() => this.close}
+                    ></i>
+                </header>
+                <div className="body" ref="body"></div>
+                <footer>
+                    {/*<button type="button" onClick={this.copyToClipboard}>copy to clipboard</button>
 				
 				<button type="button" onClick={this.downloadTable}>download</button>*/}
-				
-				<button className="close" type="button" onClick={this.close}>close</button>
-			</footer>
-		</div>
-	}
-});
+
+                    <button
+                        className="close"
+                        type="button"
+                        onClick={() => this.close}
+                    >
+                        close
+                    </button>
+                </footer>
+            </div>
+        );
+    }
+}
+
+module.exports = TableView;

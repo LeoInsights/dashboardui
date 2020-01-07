@@ -1,4 +1,4 @@
-var WebAPI = require('./WebAPI');
+var WebAPI = require('./webAPI');
 //var PivotUtils = require('./PivotUtils');
 
 module.exports = Object.freeze({
