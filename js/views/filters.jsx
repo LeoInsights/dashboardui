@@ -90,7 +90,9 @@ class Filters extends React.Component {
                                 id: 'timeframe.d_date.id',
                                 comparison: 'between',
                                 value: this.state.timefilter,
-                                label: 'Period'
+                                label: window.periodLabel
+                                    ? window.periodLabel
+                                    : 'Period'
                             }}
                             updateReportFilter={this.onTimeFrameChange.bind(
                                 this

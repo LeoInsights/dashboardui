@@ -170,18 +170,14 @@ class SimpleTable extends React.Component {
                 var xh = xheader.find("span:visible");
                 var hc = 0;
                 var hidecols = [];
+                var i;
                 if(xheader.length == 0) {
-                    xheader = $(".ag-header-row").find(".ag-header-cell-text");
-                    xheader.each(function() {
-                        if($(this).is(":visible")) {
-                            hidecols[hc] = false;
-                            newRow.push('"' + $(this)[0].innerText.replace("\"","") + '"');
-                        }
-                        else {
-                            hidecols[hc] = true;
-                        }
-                        hc++;
-                    })
+                    var columns = this.state.agGridObject.columnApi.getAllDisplayedColumns();
+    
+                    for(i = 0; i < columns.length; i++) {
+                        var headername = columns[i].colDef.headerName;
+                        newRow.push(headername);
+                    }
                 }
                 else {
                     xheader.find("span").each(function() {
@@ -207,7 +203,6 @@ class SimpleTable extends React.Component {
                 }
 
                 var visible = this.state.agGridObject.columnApi.getAllDisplayedColumns();
-                var i;
 
                 // hide all by default
                 hidecols.forEach((e,i,a)=>{
@@ -929,7 +924,8 @@ class SimpleTable extends React.Component {
                         enableFilter: true,
                         headerHeight: 48,
                         rowHeight: 30,
-                        suppressPropertyNamesCheck: true
+                        suppressPropertyNamesCheck: true,
+                        enableCellTextSelection: true
                     };
 
                     var numComparator = function(num1, num2) {
