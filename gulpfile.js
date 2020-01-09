@@ -37,6 +37,7 @@ gulp.task('copy', done => {
 	fs.createReadStream('dist/leo-oem.js').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.js'));
 	fs.createReadStream('dist/leo-oem.css').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.css'));
 	fs.createReadStream('dist/leo-oem.css').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/css/leo-oem.css'));
+	gutil.log("Finished copy");
 	done();
 });
 
@@ -54,7 +55,7 @@ gulp.task('js', function() {
 	return bundle(browserify(opts));
 });
 var b;
-gulp.task('watch', gulp.series(['less', 'copy'], function() {
+gulp.task('watch', gulp.series(['less'], function() {
 	cdn = "file:///C:/Steve/Businesses/Event%20System/code/dashboard";
 	//cdn = "file:///home/darin/Documents/leo/leo/dashboard/";
 
@@ -64,11 +65,11 @@ gulp.task('watch', gulp.series(['less', 'copy'], function() {
 	});
 	b.on('log', function(log) {
 		gutil.log("Finished '" + gutil.colors.green('build') + "'", log);
+		gulp.series(['js', 'less', 'copy'])();
 	});
 	gulp.watch('../css/**', gulp.series('less'));
-
 	return bundle(b);
-}));
+},['copy']));
 
 gulp.task('build', gulp.series(['js', 'less', 'copy']));
 gulp.task('default', gulp.series('build'));

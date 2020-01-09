@@ -1,6 +1,6 @@
 var ReactDom = require('react-dom');;
 
-var React = require('react');
+import React from 'react';
 
 var Filters = require('./views/filters.jsx');
 var OptionActions = require("./actions/options.js");
@@ -14,6 +14,134 @@ var Highcharts = require('highcharts');
 
 var charts = [];
 
+import AppBar from '@material-ui/core/AppBar';
+import Close from '@material-ui/icons/Close';
+import GetAppIcon from '@material-ui/icons/GetApp';
+import Help from '@material-ui/icons/Help';
+import IconButton from '@material-ui/core/IconButton';
+import Print from '@material-ui/icons/Print';
+import Toolbar from '@material-ui/core/Toolbar';
+import Tooltip from '@material-ui/core/Tooltip';
+import Typography from '@material-ui/core/Typography';
+import { createMuiTheme, MuiThemeProvider, styled } from '@material-ui/core/styles';
+
+const drawerWidth = 260;
+
+const theme = createMuiTheme ({
+    palette: {
+        primary: { main: '#0067b4' }
+    },
+    typography: {
+        useNextVariants: true
+    }
+});
+
+const MyAppBar = styled(AppBar)({
+    root: {
+        overflowY: 'hidden'
+    },
+    appBar: {
+        paddingLeft: 0
+    },
+    appBarShift: {
+        width: `calc(100% - ${drawerWidth}px)`,
+        marginLeft: drawerWidth,
+        paddingLeft: 16,
+        paddingRight: 16
+    }
+});
+
+
+    class ReactTitleBar extends React.Component {
+        state = {
+            isHelpOpen: false
+        }
+
+        constructor(props) {
+            super(props);
+        }
+
+        toggleIsHelpOpen(isNative=false) {
+            if(this.state.isHelpOpen) {
+                window.helpClose();
+            }
+            else {
+                window.helpOpen(this.toggleIsHelpOpen.bind(this));
+            }
+            this.setState({ isHelpOpen: !this.state.isHelpOpen });
+        }
+
+        printData() {
+            if(window.printData) {
+                window.printData(); // this is probably simpletable's printData function
+            }
+        }
+
+        exportData() {
+            if(window.exportData) {
+                window.exportData(); // this is probably simpletable's exportData function
+            }
+        }
+        
+        render() {
+            return (<MuiThemeProvider theme={theme}>
+                <MyAppBar>
+                    <Toolbar style={{ paddingRight: 20 }}>
+                        <Typography
+                            variant="h6"
+                            color="inherit"
+                            style={{ flexGrow: 1 }}
+                        >
+                            {window.reportTitle}
+                        </Typography>
+                        <Tooltip title="Print">
+                            <IconButton
+                                aria-label="Print"
+                                color="inherit"
+                                onClick={ this.printData.bind(this) }
+                            >
+                                <Print />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Export to CSV">
+                            <IconButton
+                                aria-label="Export to CSV"
+                                color="inherit"
+                                onClick={ this.exportData.bind(this) }
+                            >
+                                <GetAppIcon />
+                            </IconButton>
+                        </Tooltip>
+                        {!this.state.isHelpOpen ? (
+                        <Tooltip title="Help" id="helpButton">
+                            <IconButton
+                                id="helpButton" 
+                                aria-label="Help"
+                                color="inherit"
+                                onClick={ this.toggleIsHelpOpen.bind(this,true) }
+                            >
+                                <Help />
+                            </IconButton>
+                        </Tooltip>
+                        ) : (
+                        <Tooltip title="Close Help">
+                            <IconButton
+                                id="helpButton" 
+                                aria-label="Close Help"
+                                color="inherit"
+                                onClick={ this.toggleIsHelpOpen.bind(this,true) }
+                            >
+                                <Close />
+                            </IconButton>
+                        </Tooltip>
+                        )}
+                    </Toolbar>
+                </MyAppBar>
+            </MuiThemeProvider>);
+        }
+    }
+
+
 var LEO = require("./lib/leo.js");
 var self = module.exports = $.extend({}, LEO, {
 	init: function(opts) {
@@ -21,7 +149,12 @@ var self = module.exports = $.extend({}, LEO, {
 			window.leo = $.extend(true, window.leo || {}, opts);
 			api.setEndpoint(opts.apiEndpoint);
 			window.apiEndpoint = opts.apiEndpoint;
-			window.apiKey = undefined;
+            window.apiKey = undefined;
+            window.reportTitle = opts.reportTitle || "set LEO.init({ reportTitle: 'Title!' })!";
+            window.helpOpen = opts.helpOpen || function() {};
+            window.helpClose = opts.helpClose || function() {};
+            window.openHelp = false;
+            window.gridAPICallback = opts.gridAPICallback ? opts.gridAPICallback : null;
 		}
 		doStart();
 	},
@@ -40,6 +173,8 @@ var self = module.exports = $.extend({}, LEO, {
 		if (element.find('#leo-viewfilter').length > 0) {
 			element.find(".leo-charts-wrapper").addClass('has-footer');
 		}
+
+        ReactDom.render( < ReactTitleBar id="reacttb" /> , document.getElementById("leo-title-bar"));
 
 		element.find(".leo-filters").each(function(i, filterSection) {
 			var leoGroup = $(filterSection).data("leo-group");

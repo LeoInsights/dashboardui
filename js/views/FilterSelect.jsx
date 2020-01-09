@@ -35,7 +35,6 @@ class FilterSelect extends React.Component {
     }
 
     componentDidMount() {
-        console.log("filterSelect: componentDidMount()");
 		var filter = this.props.filter;
 
 		//fix value for dynamic ranges
@@ -432,7 +431,7 @@ class FilterSelect extends React.Component {
 					{
 						this.state.searchResults.map(function(result, index) {
 							var className = (filter && filter.value && filter.value.indexOf(result.id) == -1 ? '' : 'selected') + (thisComponent.state.searchIndex == index ? ' hover' : '');
-							return <li key={index} className={className} onMouseEnter={index=>thisComponent.setSearchIndex(index)} onClick={thisComponent.addValue.bind(this, result.id)}>{result.text}</li>
+							return <li key={index} className={className} onMouseEnter={index=>thisComponent.setSearchIndex(index)} onClick={thisComponent.addValue.bind(thisComponent, result.id)}>{result.text}</li>
 						})
 					}
 					</ul>

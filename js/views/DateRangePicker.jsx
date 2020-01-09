@@ -1,4 +1,4 @@
-var React = require('react');
+import React, { Fragment } from 'react';
 var ReactDOM = require("react-dom");
 var PropTypes = require('prop-types');
 
@@ -91,7 +91,8 @@ class DRP extends React.Component {
         current: 0,
         start: null,
         end: null,
-        atDateRange: false
+        atDateRange: false,
+        showPresets: true
     };
 
 	constructor(props) {
@@ -188,7 +189,6 @@ class DRP extends React.Component {
 	loading = false;
 
 	initCalendars() {
-        console.log("initCalendars()");
 		var thisComponent = this;
 
 		//if (this.state.custom && !$('#custom-date-range > div').hasClass('hasDatepicker')) {
@@ -328,7 +328,11 @@ class DRP extends React.Component {
 		this.loading = false;
 		$('#custom-date-range').dateRangePicker("setRange", {start: new Date(dates[0]), end: new Date(dates[1] + ' 23:59:59') })
 		this.loading = true;
-	}
+    }
+    
+    clickPreset(bPreset) {
+        this.setState({showPresets: bPreset});
+    }
 
 	render() {
 
@@ -341,13 +345,15 @@ class DRP extends React.Component {
 		}
 
 		return (<div>
+            <table style={{marginBottom:'20px',width:'100%'}}><tbody><tr style={{fontSize:'11pt'}}><td onClick={this.clickPreset.bind(this,true)} style={this.state.showPresets?{textAlign:'center',width:'50%',borderBottom:'1px #999999 solid',borderRight:'1px #999999 solid',color:'white',background:'highlight',padding:'5px','cursor':'pointer'}:{textAlign:'center',width:'50%',borderBottom:'1px #999999 solid',borderRight:'1px #999999 solid',padding:'5px','cursor':'pointer'}}>Presets</td><td onClick={this.clickPreset.bind(this,false)} style={this.state.showPresets?{textAlign:'center',width:'50%',borderBottom:'1px #999999 solid',padding:'5px','cursor':'pointer'}:{textAlign:'center',width:'50%',borderBottom:'1px #999999 solid',color:'white',background:'highlight',padding:'5px','cursor':'pointer'}}>Custom Timespan</td></tr></tbody></table>
+
+            <div style={{display:this.state.showPresets?'none':'block'}}>
 			{
 
 				!this.state.atDateRange
 
 				? <div className="range-custom">
 					<fieldset className={!this.state.range ? 'active' : ''}>
-						<legend>Custom Timespan</legend>
 						<div>
 							Last <input ref="customLast" className="new-styled" type="number" min="0" defaultValue={this.state.last} onChange={this.changedCustom.bind(this, 'last')} />
 							<select ref="customPeriod" className="new-styled" defaultValue={this.state.period} onChange={this.changedCustom.bind(this, 'period')}>
@@ -400,7 +406,8 @@ class DRP extends React.Component {
 
 				</div>
 			}
-
+            </div>
+            <div style={{display:this.state.showPresets?'block':'none'}}>
 			{
 				!this.state.atDateRange
 
@@ -426,6 +433,7 @@ class DRP extends React.Component {
 
 				: false
 			}
+            </div>
 
 		</div>)
 

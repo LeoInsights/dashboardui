@@ -10,7 +10,6 @@ var missingRequired = '-99999999';
 class Filter extends React.Component {
     constructor(props) {
         super(props);
-        console.log('constructed filter:', props);
     }
 
     state = {
@@ -24,7 +23,6 @@ class Filter extends React.Component {
 
     //componentWillMount
     componentDidMount() {
-        console.log('filter:componentDidMount()');
         var filter = this.props.filter;
 
         //fix value for dynamic ranges
@@ -98,12 +96,6 @@ class Filter extends React.Component {
     }
 
     componentWillReceiveProps(nextProps) {
-        console.log(
-            'filter:componentWillReceiveProps nextProps:',
-            nextProps,
-            'filter:',
-            filter
-        );
         var filter = this.state.filter;
 
         if (!filter.label && nextProps.filter.label) {
@@ -211,7 +203,6 @@ class Filter extends React.Component {
     }
 
     open(e) {
-        console.log('this.open e=', e);
         this.setState({ showEditor: true });
     }
 

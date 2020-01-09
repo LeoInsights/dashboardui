@@ -6,81 +6,10 @@ var Highcharts = require('highcharts');
 
 var DataAction = require("../../actions/data.js");
 
-var sort = require("../../sort.js");
-var format = require("../../format.js");
-
-import AppBar from '@material-ui/core/AppBar';
-import GetAppIcon from '@material-ui/icons/GetApp';
-import Help from '@material-ui/icons/Help';
-import IconButton from '@material-ui/core/IconButton';
-import Print from '@material-ui/icons/Print';
-import Toolbar from '@material-ui/core/Toolbar';
-import Tooltip from '@material-ui/core/Tooltip';
-import Typography from '@material-ui/core/Typography';
-import { createMuiTheme, MuiThemeProvider, withStyles } from '@material-ui/core/styles';
-
 import { AgGridReact } from 'ag-grid-react';
 
-const drawerWidth = 260;
-
-const mainTheme = createMuiTheme({
-    palette: {
-        primary: { main: '#0067b4' }
-    },
-    typography: {
-        useNextVariants: true
-    }
-});
-
-const styles = theme => ({
-    buttonProgress: {
-        color: '#aaa',
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        marginTop: -12,
-        marginLeft: -12
-    },
-    overLay: {
-        backgroundColor: '#eee',
-        position: 'absolute',
-        top: '0',
-        right: '0',
-        bottom: '0',
-        left: '0',
-        margin: 'auto',
-        opacity: '0.5',
-        width: '100%',
-        zIndex: '9999'
-    },
-    root: {
-        overflowY: 'hidden'
-    },
-    grow: {
-        flexGrow: 1
-    },
-    paper: {
-        padding: 16
-    },
-    appBar: {
-        transition: theme.transitions.create(['margin', 'width'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen
-        }),
-        paddingLeft: 0
-    },
-    appBarShift: {
-        width: `calc(100% - ${drawerWidth}px)`,
-        marginLeft: drawerWidth,
-        transition: theme.transitions.create(['margin', 'width'], {
-            easing: theme.transitions.easing.easeOut,
-            duration: theme.transitions.duration.enteringScreen
-        }),
-        paddingLeft: 16,
-        paddingRight: 16
-    },
-});
-
+var sort = require("../../sort.js");
+var format = require("../../format.js");
 
 class BasicRenderer extends React.Component {
     render() {
@@ -93,7 +22,7 @@ class BasicRenderer extends React.Component {
             paddingLeft: 0,
             verticalAlign: 'middle',
             textAlign:
-                (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact') ? 'right' : 'left',
+                (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact') ? 'right' : (this.props.colDef.colType == 'center' ? 'center' : 'left'),
         }}
         dangerouslySetInnerHTML={{ __html: this.props.colDef.formatter ? this.props.colDef.formatter(value) : value }}></div>;
     }
@@ -111,7 +40,7 @@ class CustomPinnedRowRenderer extends React.Component {
                     fontWeight: 'bold',
                     verticalAlign: 'middle',
                     textAlign:
-                        (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact') ? 'right' : 'left',
+                        (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact') ? 'right' : (this.props.colDef.colType == 'center' ? 'center' : 'left'),
                     paddingTop: 0,
                     color: '#444444'
                 }}
@@ -121,7 +50,6 @@ class CustomPinnedRowRenderer extends React.Component {
         );
     }
 }
-
 
 module.exports = function(element, spec, options, my) {
 	my = my || {};
@@ -151,7 +79,6 @@ module.exports = function(element, spec, options, my) {
 
 }
 
-@withStyles(styles)
 class SimpleTable extends React.Component {
 
 			// getInitialState() {
@@ -176,59 +103,19 @@ class SimpleTable extends React.Component {
                 filters: [],
                 sortBy: null,
                 sortDir: null,
-                startRow: 0
+                startRow: 0,
+                agGridObject: null
             }
 
             constructor(props) {
                 super(props);
 
-                let { classes, theme } = props;
-
-                ReactDOM.render( <MuiThemeProvider theme={mainTheme}>
-                        <AppBar className={classes.appBarDialog}>
-                            <Toolbar style={{ paddingRight: 0 }}>
-                                <Typography
-                                    variant="h6"
-                                    color="inherit"
-                                    className={classes.grow}
-                                >
-                                    {this.props.options.title || this.props.spec.title}
-                                </Typography>
-                                <Tooltip title="Print">
-                                    <IconButton
-                                        aria-label="Print"
-                                        color="inherit"
-                                        onClick={() => this.printData() }
-                                    >
-                                        <Print />
-                                    </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Export to CSV">
-                                    <IconButton
-                                        aria-label="Export to CSV"
-                                        color="inherit"
-                                        onClick={() => this.exportData()}
-                                    >
-                                        <GetAppIcon />
-                                    </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Help">
-                                    <IconButton
-                                        aria-label="Help"
-                                        color="inherit"
-                                        onClick={() => this.help()}
-                                    >
-                                        <Help />
-                                    </IconButton>
-                                </Tooltip>
-                            </Toolbar>
-                        </AppBar>
-                    </MuiThemeProvider>, 
-                    document.getElementById("leo-title-bar"));
-
                 if($('#leo-title-bar').length) {
                     $(".leo-charts-wrapper").addClass('has-header2')
                 }
+
+                window.printData = this.printData.bind(this);
+                window.exportData = this.exportData.bind(this);
             }
 
 			componentWillMount() {
@@ -313,20 +200,48 @@ class SimpleTable extends React.Component {
                 outRows.push(newRow);
         
                 newRow = [];
-                for(var i = 0; i < main_table.length; i++) {
+                var main_table = [];
+
+                if(this.state.agGridObject == null) {
+                    return; // nope
+                }
+
+                var visible = this.state.agGridObject.columnApi.getAllDisplayedColumns();
+                var i;
+
+                // hide all by default
+                hidecols.forEach((e,i,a)=>{
+                    hidecols[i] = true;
+                })
+
+                for(i = 0; i < visible.length; i++) {
+                    var col = parseInt(visible[i].colId.split("_")[0]);
+                    hidecols[col] = false;
+                }
+
+                // we are going to print/export the currently-filtered view!
+                this.state.agGridObject.api.forEachNodeAfterFilter((node,index)=> {
+                    var res = [];
+                    Object.keys(node.data).map(function(key,i) {
+                        res[i] = [node.data[i]];
+                    });
+                    main_table.push(res);
+                });
+
+                for(i = 0; i < main_table.length; i++) {
                     for(var j = 0; j < main_table[i].length; j++) {
                         if(hidecols[j] == false) {
                             if(main_table[i][j] === null) {
                                 newRow.push('""'); // null - blank.
                             }
                             else {
-                                if(outRows[0][newRow.length].indexOf("Expected") >= 0) {
-                                    // special case...this is in pennies for whatever reason, and we need it formatted as money.  this is because the value: is a function() for this column.
-                                        newRow.push('"' + (Math.round(toDecimal(main_table[i][j].toString())) / 100) + '"');
-                                }
-                                else {
+                                // if(outRows[0][newRow.length].indexOf("Expected") >= 0) {
+                                //     // special case...this is in pennies for whatever reason, and we need it formatted as money.  this is because the value: is a function() for this column.
+                                //         newRow.push('"' + (Math.round(toDecimal(main_table[i][j].toString())) / 100) + '"');
+                                // }
+                                // else {
                                     newRow.push('"' + main_table[i][j].toString().replace("\"","") + '"');
-                                }
+                                // }
                             }
                         }
                     }
@@ -339,17 +254,17 @@ class SimpleTable extends React.Component {
                             newRow.push('""'); // null - blank.
                         }
                         else {
-                            if(outRows[0][newRow.length].indexOf("Adj ") >= 0 && (outRows[0][newRow.length].indexOf(",") == -1 && outRows[0][newRow.length].indexOf(",") == -1) && outRows[0][newRow.length].indexOf(" % ") == -1) {
-                                // for some reason on the Credits by Effective Date version, the Adjusted columns are still in pennies.  In this case, divide by 100.
-                                newRow.push('"' + (Math.round(toDecimal(main_totals[j].toString())) / 100) + '"');
-                            }
-                            else if(outRows[0][newRow.length].indexOf("Expected") >= 0) {
-                                // special case...this is in pennies for whatever reason, and we need it formatted as money.  this is because the value: is a function() for this column.
-                                newRow.push('"' + (Math.round(toDecimal(main_totals[j].toString())) / 100) + '"');
-                            }
-                            else {
+                            // if(outRows[0][newRow.length].indexOf("Adj ") >= 0 && (outRows[0][newRow.length].indexOf(",") == -1 && outRows[0][newRow.length].indexOf(",") == -1) && outRows[0][newRow.length].indexOf(" % ") == -1) {
+                            //     // for some reason on the Credits by Effective Date version, the Adjusted columns are still in pennies.  In this case, divide by 100.
+                            //     newRow.push('"' + (Math.round(toDecimal(main_totals[j].toString())) / 100) + '"');
+                            // }
+                            // else if(outRows[0][newRow.length].indexOf("Expected") >= 0) {
+                            //     // special case...this is in pennies for whatever reason, and we need it formatted as money.  this is because the value: is a function() for this column.
+                            //     newRow.push('"' + (Math.round(toDecimal(main_totals[j].toString())) / 100) + '"');
+                            // }
+                            // else {
                                 newRow.push('"' + main_totals[j].toString().replace("\"","") + '"');
-                            }
+                            // }
                         }
                     }
                 }
@@ -887,12 +802,58 @@ class SimpleTable extends React.Component {
 				})
             }
             
-            onGridReady = params => {
-
-            }
-
             onFirstDataRendered = params => {
                 params.api.sizeColumnsToFit();
+            }
+
+            onFilterChanged = params => {
+                if (this.props.spec.onTotals && this.props.spec.onTotals in window) {
+                    var outRows = [];
+                    params.api.forEachNodeAfterFilter((node,index)=> {
+                        outRows.push(node.data)
+                    });
+
+					this.totals = []
+					outRows.forEach((row, rowNum) => {
+						this.columns.forEach((column, i) => {
+							if (typeof row[i] == 'number') {
+								this.totals[i] = (typeof this.totals[i] == 'undefined' ? 0 : this.totals[i]) + parseFloat(0 + row[i])
+							}
+						})
+					})
+
+					this.totalRows = outRows.length
+
+                    var totals = this.totals
+                    
+					if (this.props.spec.onTotals && this.props.spec.onTotals in window) {
+						totals = window[this.props.spec.onTotals](totals, outRows, this.rows);
+					}
+
+                    var totals2 = [];
+                    totals2[0] = [];
+                    for(var i = 0; i < totals.length; i++) {
+                        totals2[0][i] = totals[i] ? totals[i] : '';
+                    }
+
+                    params.api.setPinnedBottomRowData(totals2);
+
+                    // var totals = window[this.props.spec.onTotals](this.totals, outRows, this.rows);
+                    // var totals2 = [];
+                    // totals2[0] = [];                    
+                    // for(var i = 0; i < totals.length; i++) {
+                    //     totals2[0][i] = totals[i] ? totals[i] : '';
+                    // }
+
+                    this.totals = totals2;
+                }
+            }
+
+            onGridReady = params => {
+                this.setState( { agGridObject: params });
+                if(window.gridAPICallback) {
+                    window.gridAPICallback(params);
+                }
             }
 
             onGridSizeChanged = params => {
@@ -900,6 +861,7 @@ class SimpleTable extends React.Component {
             }
 
 			render() {
+                console.log("rerender");
 					// Filter this new table
 					this.outRows = this.outRows.filter((row, i) => {
 						var matched = true;
@@ -984,10 +946,17 @@ class SimpleTable extends React.Component {
                         }
                         return formatNum1 - formatNum2;
                     };
-            
+                    console.log("columnDefs");
                     var columnDefs = this.columns.map((column, i) => {
                         var headerClass = column.type == 'fact' || column.type == 'metric' ? 'rightJustifyHeader' : null;
                         var typ = column.type == 'fact' || column.type == 'metric' ? 'rightJustifyHeader' : null;
+                        if(column.type == 'center') {
+                            headerClass = 'centerJustifyHeader';
+                        }
+                        var extra = {};
+                        if(this.state.sortBy == i && this.state.sortDir != null) {
+                            extra.sort = this.state.sortDir == -1 ? 'desc' : 'asc';
+                        }
                         return {                   
                             minWidth: 70,
                             headerName: column.label,
@@ -997,7 +966,9 @@ class SimpleTable extends React.Component {
                             cellRenderer: 'basicRenderer',
                             formatter: column.formatter,
                             colType: column.type,
-                            headerClass: headerClass
+                            headerClass: headerClass,
+                            columnClassName: column.className,
+                            ...extra
                         }
                     });
                     var rows = this.outRows.map(r=>{
@@ -1039,6 +1010,7 @@ class SimpleTable extends React.Component {
                                     onGridSizeChanged={this.onGridSizeChanged.bind(this)}
                                     onGridReady={this.onGridReady.bind(this)}
                                     onFirstDataRendered={this.onFirstDataRendered.bind(this)}
+                                    onFilterChanged={this.onFilterChanged.bind(this)}
                                     pinnedBottomRowData={
                                         totals2
                                     }
