@@ -44,8 +44,8 @@ class CustomPinnedRowRenderer extends React.Component {
                     paddingTop: 0,
                     color: '#444444'
                 }}
+                dangerouslySetInnerHTML={{ __html: val }}
             >
-                {val}
             </div>
         );
     }
@@ -222,6 +222,11 @@ class SimpleTable extends React.Component {
                     });
                     main_table.push(res);
                 });
+
+                if(main_table.length > 1800 && doPrint) {
+                    alert("Report is too large to print at " + main_table.length + " rows. Please filter the report to less than 1800 rows, or export the data to CSV and use Excel to print.");
+                    return; // abort.
+                }
 
                 for(i = 0; i < main_table.length; i++) {
                     for(var j = 0; j < main_table[i].length; j++) {
