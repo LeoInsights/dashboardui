@@ -156,6 +156,7 @@ var self = module.exports = $.extend({}, LEO, {
             window.openHelp = false;
             window.gridAPICallback = opts.gridAPICallback ? opts.gridAPICallback : null;
             window.periodLabel = opts.periodLabel ? opts.periodLabel : "Period";
+            window.simpleTableHeaderHeight = opts.simpleTableHeaderHeight || null;
 		}
 		doStart();
 	},

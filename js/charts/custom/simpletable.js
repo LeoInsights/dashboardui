@@ -197,6 +197,7 @@ class SimpleTable extends React.Component {
         
                 newRow = [];
                 var main_table = [];
+                var main_totals = this.totals;
 
                 if(this.state.agGridObject == null) {
                     return; // nope
@@ -276,7 +277,7 @@ class SimpleTable extends React.Component {
                 var downloadForm = $("#downloadformRSIS");
                 // if (!downloadForm.length) {
                 if(doPrint == true) {
-                    downloadForm = $('<div id="downloadformRSIS" style="display: none"><form method="POST" target="_blank" action="./printPage.php?name=Import Totals" /></div>').appendTo("body");;
+                    downloadForm = $('<div id="downloadformRSIS" style="display: none"><form method="POST" target="_blank" action="./printPage.php?name='+window.reportTitle+'" /></div>').appendTo("body");;
                 }
                 else {
                     downloadForm = $('<div id="downloadformRSIS" style="display: none"><form method="POST" action="/api/warehouse2/download" /></div>').appendTo("body");
@@ -822,6 +823,14 @@ class SimpleTable extends React.Component {
 						})
 					})
 
+                    this.columns.forEach((column, i) => {
+                        if(typeof column.type != 'undefined') {
+                            if(column.type == 'averagemoney' && this.outRows.length) {
+                                this.totals[i] = Math.round(100 * this.totals[i] / this.outRows.length) / 100;
+                            }
+                        }
+                    });
+
 					this.totalRows = outRows.length
 
                     var totals = this.totals
@@ -887,6 +896,17 @@ class SimpleTable extends React.Component {
 						})
 					})
 
+                    this.columns.forEach((column, i) => {
+                        if(typeof column.type != 'undefined') {
+                            if(column.type == 'averagemoney' && this.outRows.length) {
+                                // this is imprecise, as it's just averaging the averages.  would be better to do an average that takes the entire
+                                // amount divided by the total count, but we'd have to reference different columns of information. Will put this off
+                                // until somebody complains.  --Adam
+                                this.totals[i] = Math.round(100 * this.totals[i] / this.outRows.length) / 100;
+                            }
+                        }
+                    });
+
 					this.totalRows = this.outRows.length
 
                     var totals = this.totals
@@ -927,7 +947,7 @@ class SimpleTable extends React.Component {
                         enableSorting: true,
                         enableColResize: true,
                         enableFilter: true,
-                        headerHeight: 48,
+                        headerHeight: window.simpleTableHeaderHeight != null ? window.simpleTableHeaderHeight : 48,
                         rowHeight: 30,
                         suppressPropertyNamesCheck: true,
                         enableCellTextSelection: true
