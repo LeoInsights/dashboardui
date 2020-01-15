@@ -56,7 +56,7 @@ gulp.task('js', function() {
 });
 var b;
 gulp.task('watch', gulp.series(['less'], function() {
-	cdn = "file:///C:/Steve/Businesses/Event%20System/code/dashboard";
+	cdn = "../";
 	//cdn = "file:///home/darin/Documents/leo/leo/dashboard/";
 
 	b = watchify(browserify(opts));

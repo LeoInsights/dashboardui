@@ -22,7 +22,7 @@ class BasicRenderer extends React.Component {
             paddingLeft: 0,
             verticalAlign: 'middle',
             textAlign:
-                (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact') ? 'right' : (this.props.colDef.colType == 'center' ? 'center' : 'left'),
+                (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact' || this.props.colDef.colType == 'averagemoney') ? 'right' : (this.props.colDef.colType == 'center' ? 'center' : 'left'),
         }}
         dangerouslySetInnerHTML={{ __html: this.props.colDef.formatter ? this.props.colDef.formatter(value) : value }}></div>;
     }
@@ -40,7 +40,7 @@ class CustomPinnedRowRenderer extends React.Component {
                     fontWeight: 'bold',
                     verticalAlign: 'middle',
                     textAlign:
-                        (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact') ? 'right' : (this.props.colDef.colType == 'center' ? 'center' : 'left'),
+                        (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact' || this.props.colDef.colType == 'averagemoney') ? 'right' : (this.props.colDef.colType == 'center' ? 'center' : 'left'),
                     paddingTop: 0,
                     color: '#444444'
                 }}
@@ -870,7 +870,6 @@ class SimpleTable extends React.Component {
             }
 
 			render() {
-                console.log("rerender");
 					// Filter this new table
 					this.outRows = this.outRows.filter((row, i) => {
 						var matched = true;
@@ -950,7 +949,11 @@ class SimpleTable extends React.Component {
                         headerHeight: window.simpleTableHeaderHeight != null ? window.simpleTableHeaderHeight : 48,
                         rowHeight: 30,
                         suppressPropertyNamesCheck: true,
-                        enableCellTextSelection: true
+                        enableCellTextSelection: true,
+                        columnTypes: {
+                            rightJustifyHeader: { textAlign: 'right' },
+                            centerJustifyHeader: { textAlign: 'center' }
+                        }
                     };
 
                     var numComparator = function(num1, num2) {
@@ -967,10 +970,9 @@ class SimpleTable extends React.Component {
                         }
                         return formatNum1 - formatNum2;
                     };
-                    console.log("columnDefs");
                     var columnDefs = this.columns.map((column, i) => {
-                        var headerClass = column.type == 'fact' || column.type == 'metric' ? 'rightJustifyHeader' : null;
-                        var typ = column.type == 'fact' || column.type == 'metric' ? 'rightJustifyHeader' : null;
+                        var headerClass = column.type == 'fact' || column.type == 'metric' || column.type == 'averagemoney' ? 'rightJustifyHeader' : null;
+                        var typ = column.type == 'fact' || column.type == 'metric' || column.type == 'averagemoney' ? 'rightJustifyHeader' : null;
                         if(column.type == 'center') {
                             headerClass = 'centerJustifyHeader';
                         }
