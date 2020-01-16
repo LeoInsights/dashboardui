@@ -148,7 +148,10 @@ class SimpleTable extends React.Component {
 			}
 
 			componentDidUpdate() {
-				this.adjustScrollFiller()
+                this.adjustScrollFiller();
+                if(this.state.agGridObject && this.state.agGridObject.api) {
+                    this.state.agGridObject.api.sizeColumnsToFit();
+                }
 			}
 
 			filterChange(col, e) {
