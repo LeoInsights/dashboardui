@@ -191,7 +191,6 @@ class DRP extends React.Component {
 
 	initCalendars() {
 		var thisComponent = this;
-        console.log("initCalendars");
 		//if (this.state.custom && !$('#custom-date-range > div').hasClass('hasDatepicker')) {
 		if (!$('#custom-date-range > div').hasClass('hasDatepicker')) {
 
@@ -254,7 +253,6 @@ class DRP extends React.Component {
 
 
 	setRange(dates, e) {
-        console.log("DateRangePicker::setRange dates:",dates);
 		$(this.refs.presetList).find('button').removeClass('active');
 		$(e.target).addClass('active');
 
