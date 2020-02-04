@@ -76,9 +76,10 @@ class DRP extends React.Component {
 	formatDate(date) {
 		function pad(number) {
 			return ((number < 10) ? '0' : '') + number;
-		}
-		var date = (!date) ? new Date(): new Date(date);
-		return date.getUTCFullYear() + '-' + pad(date.getUTCMonth() + 1) + '-' + pad(date.getUTCDate());
+        }
+        var prevdate = date;
+        var date = (!date) ? new Date(): new Date(date);
+		return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate());
 	}
 
     state = {
@@ -190,7 +191,7 @@ class DRP extends React.Component {
 
 	initCalendars() {
 		var thisComponent = this;
-
+        console.log("initCalendars");
 		//if (this.state.custom && !$('#custom-date-range > div').hasClass('hasDatepicker')) {
 		if (!$('#custom-date-range > div').hasClass('hasDatepicker')) {
 
@@ -211,7 +212,10 @@ class DRP extends React.Component {
 				if (this.state.atDateRange) {
 					var dates = parse_date(this.state.defaultValue);
 					$('#custom-date-range').dateRangePicker("setRange", {start: new Date(dates[0]), end: new Date(dates[1] + ' 23:59:59') })
-				} else {
+				} else if(this.props.filter.value.length == 2) {
+                    var dates = this.props.filter.value;
+                    $('#custom-date-range').dateRangePicker("setRange", {start: new Date(dates[0]), end: new Date(dates[1] + ' 23:59:59') })
+                } else {
 					var date = 'Last ' + this.refs.customLast.value + ' ' + this.refs.customPeriod.value + (this.refs.customCurrent.checked ? '+current' : '')+(this.refs.customToDate.value == 'period' ? '' : this.refs.customToDate.value);
 					var dates = parse_date(date);
 					$('#custom-date-range').dateRangePicker("setRange", {start: new Date(dates[0]), end: new Date(dates[1] + ' 23:59:59') })
@@ -250,6 +254,7 @@ class DRP extends React.Component {
 
 
 	setRange(dates, e) {
+        console.log("DateRangePicker::setRange dates:",dates);
 		$(this.refs.presetList).find('button').removeClass('active');
 		$(e.target).addClass('active');
 
