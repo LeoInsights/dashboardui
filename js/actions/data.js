@@ -18,6 +18,10 @@ module.exports = require('../react/flux/action.js')(function(my, dispatcher) {
             apiData.forceIndex = data.forceIndex;
         }
 
+        if (typeof data.limit != 'undefined') {
+            apiData.limit = data.limit;
+        }
+
         if (apiData.metrics.length > 0) {
             api.post('report', apiData, function(result) {
                 if (result === 'error') {

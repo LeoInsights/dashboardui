@@ -14,6 +14,7 @@ var format = require("../../format.js");
 class BasicRenderer extends React.Component {
     render() {
         const { value } = this.props;
+        var extraStyles = window.simpleTableExtraCellStyles != null ? window.simpleTableExtraCellStyles : {};
 
         return <div 
         style={{
@@ -21,8 +22,10 @@ class BasicRenderer extends React.Component {
             height: '100%',
             paddingLeft: 0,
             verticalAlign: 'middle',
+            lineHeight: window.simpleTableLineHeight != null ? window.simpleTableLineHeight : 'inherit',
             textAlign:
                 (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact' || this.props.colDef.colType == 'averagemoney') ? 'right' : (this.props.colDef.colType == 'center' ? 'center' : 'left'),
+            ...extraStyles    
         }}
         dangerouslySetInnerHTML={{ __html: this.props.colDef.formatter ? this.props.colDef.formatter(value) : value }}></div>;
     }
@@ -31,6 +34,7 @@ class BasicRenderer extends React.Component {
 class CustomPinnedRowRenderer extends React.Component {
     render() {
         var val = this.props.colDef.formatter ? this.props.colDef.formatter(this.props.value) : this.props.value;
+        var extraStyles = window.simpleTableExtraCellStyles != null ? window.simpleTableExtraCellStyles : {};
         return (
             <div
                 style={{
@@ -42,7 +46,8 @@ class CustomPinnedRowRenderer extends React.Component {
                     textAlign:
                         (this.props.colDef.colType == 'metric' || this.props.colDef.colType == 'fact' || this.props.colDef.colType == 'averagemoney') ? 'right' : (this.props.colDef.colType == 'center' ? 'center' : 'left'),
                     paddingTop: 0,
-                    color: '#444444'
+                    color: '#444444',
+                    ...extraStyles    
                 }}
                 dangerouslySetInnerHTML={{ __html: val }}
             >
@@ -807,6 +812,11 @@ class SimpleTable extends React.Component {
             }
             
             onFirstDataRendered = params => {
+                var allColumnIds = [];
+                params.columnApi.getAllColumns().forEach(function(column) {
+                    allColumnIds.push(column.colId);
+                });
+                params.columnApi.autoSizeColumns(allColumnIds, true);
                 params.api.sizeColumnsToFit();
             }
 
@@ -869,6 +879,11 @@ class SimpleTable extends React.Component {
             }
 
             onGridSizeChanged = params => {
+                var allColumnIds = [];
+                params.columnApi.getAllColumns().forEach(function(column) {
+                    allColumnIds.push(column.colId);
+                });
+                params.columnApi.autoSizeColumns(allColumnIds, true);
                 params.api.sizeColumnsToFit();
             }
 
@@ -950,7 +965,7 @@ class SimpleTable extends React.Component {
                         enableColResize: true,
                         enableFilter: true,
                         headerHeight: window.simpleTableHeaderHeight != null ? window.simpleTableHeaderHeight : 48,
-                        rowHeight: 30,
+                        rowHeight: window.simpleTableRowHeight != null ? window.simpleTableRowHeight : 30,
                         suppressPropertyNamesCheck: true,
                         enableCellTextSelection: true,
                         columnTypes: {

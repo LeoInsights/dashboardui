@@ -14,12 +14,25 @@ var Highcharts = require('highcharts');
 
 var charts = [];
 
+import classNames from 'classnames';
+
 import AppBar from '@material-ui/core/AppBar';
+import Button from '@material-ui/core/Button';
+import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
+import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import Close from '@material-ui/icons/Close';
+import Divider from '@material-ui/core/Divider';
+import Drawer from '@material-ui/core/Drawer';
 import GetAppIcon from '@material-ui/icons/GetApp';
 import Help from '@material-ui/icons/Help';
 import IconButton from '@material-ui/core/IconButton';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemText from '@material-ui/core/ListItemText';
+import ListSubheader from '@material-ui/core/ListSubheader';
+import MenuIcon from '@material-ui/icons/Menu';
 import Print from '@material-ui/icons/Print';
+import TextField from '@material-ui/core/TextField';
 import Toolbar from '@material-ui/core/Toolbar';
 import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
@@ -141,6 +154,400 @@ const MyAppBar = styled(AppBar)({
         }
     }
 
+    class DashboardFramework extends React.Component {
+        state = {
+            isHelpOpen: false,
+            currentView: '<i class="fa fa-truck fa-flip-horizontal"></i>&nbsp;Carriers',
+            drawerOpen: false,
+            menuList: [
+                {
+                    label: "Home",
+                    icon: "fa fa-home",
+                    link: "../landingdashboard2.php"
+                },
+                {
+                    label: "Help",
+                    icon: "fa fa-question-circle",
+                    link: "../help.php"
+                },
+                {
+                    label: "My System",
+                    icon: "",
+                    type: "Heading"
+                },
+                {
+                    label: "My Frachise",
+                    icon: "fa fa-briefcase",
+                    link: "../myfranchise.php?includecredits=1&excludedutiestaxes=0"
+                },
+                {
+                    label: "Charts",
+                    icon: "fa fa-bar-chart",
+                    link: "./../managementpack.php"
+                },
+                {
+                    label: "Follow-Ups",
+                    icon: "fa fa-calendar-check-o",
+                    link: "../followups.php"
+                },
+                {
+                    label: "$FRANCISE Detail",
+                    icon: "fa fa-list-alt",
+                    link: "../../monthlymargin.php"
+                },
+                {
+                    label: "Shipments",
+                    icon: "",
+                    link: "",
+                    type: "Heading"
+                },
+                {
+                    label: "Webship",
+                    iconAltText: "WS",
+                    iconAltTextStyle: { fontWeight: 'bold', border: '1px black solid'},
+                    link: "../webship.php",
+                },
+                {
+                    label: "WS Details",
+                    icon: "fa fa-list",
+                    link: "../webship_details.php",
+                },
+                {
+                    label: "WS Pickups",
+                    icon: "fa fa-truck",
+                    link: "../webship_pickups.php",
+                },
+                {
+                    label: "eCommerce",
+                    icon: "fa fa-shopping-cart",
+                    link: "../ecommerce.php"
+                },
+                {
+                    label: "Integrations",
+                    icon: "fa fa-link",
+                    link: "../ecintegrations.php",
+                },
+                {
+                    label: "BYO Shipments",
+                    iconAltText: "BYO",
+                    iconAltTextStyle: { fontWeight: 'bold', border: '1px black solid'},
+                    link: "../byo.php",
+                },
+                {
+                    label: "Carriers",
+                    icon: "fa fa-truck fa-flip-horizontal",
+                    link: "../carriers.php",
+                },
+                {
+                    label: "Services",
+                    icon: "fa fa-plane",
+                    link: "../services.php?uspsonly=0",
+                },
+                {
+                    label: "Tracking",
+                    new: true,
+                    icon: "fa fa-globe",
+                    link: "../tracking.php",
+                },
+                {
+                    label: "Customer Tracking",
+                    new: true,
+                    icon: "fa fa-map-marker",
+                    link: "../trackingcustomer.php",
+                },
+                {
+                    label: "Sales",
+                    icon: "",
+                    link: "",
+                    type: "Heading"
+                },
+                {
+                    label: "Setups / Activations",
+                    icon: "fa fa-area-chart",
+                    link: "../setups_and_activations.php?uspsonly=0",
+                },
+                {
+                    label: "Sales Reps",
+                    iconAltText: "SR",
+                    iconAltTextStyle: { fontWeight: 'bold', border: '1px black solid'},
+                    link: "../sales_reps.php",
+                },
+                {
+                    label: "Sales Rep Detail",
+                    icon: "fa fa-list",
+                    link: "../../monthlymargin.php?groupby=d_customer.salesrep"
+                },
+                {
+                    label: "Sales Forecast",
+                    icon: "fa fa-line-chart",
+                    link: "../salesforecast.php",
+                },
+                {
+                    // TODO: DO NOT SHOW FOR BGL, BG2, BGC!
+                    label: "Customer Onboarding",
+                    icon: "fa fa-handshake-o",
+                    link: "../customeronboarding.php",
+                },
+                {
+                    label: "Retention",
+                    icon: "",
+                    type: "Heading"
+                },
+                {
+                    label: "Overall",
+                    iconAltText: "O",
+                    iconAltTextStyle: { padding: 2, fontWeight: 'bold', border: '1px black solid'},
+                    link: "../../retention/retention.html"
+                },
+                {
+                    label: "Monthly",
+                    iconAltText: " M ",
+                    iconAltTextStyle: { padding: 2, fontWeight: 'bold', border: '1px black solid'},
+                    link: "../../retention/retention.html"
+                },
+                {
+                    label: "Quarterly",
+                    iconAltText: " Q ",
+                    iconAltTextStyle: { padding: 2, fontWeight: 'bold', border: '1px black solid'},
+                    link: "../../retention/franchisequarterly.php"
+                },
+                {
+                    label: "Yearly",
+                    iconAltText: " Y ",
+                    iconAltTextStyle: { padding: 2, fontWeight: 'bold', border: '1px black solid'},
+                    link: "../../retention/franchiseyearly.html"
+                },
+                {
+                    label: "Customer",
+                    iconAltText: " C ",
+                    iconAltTextStyle: { padding: 2, fontWeight: 'bold', border: '1px black solid'},
+                    link: "../../retention/customer.php"
+                },
+                {
+                    label: "Receivables",
+                    icon: "",
+                    type: "Heading"
+                },
+                {
+                    label: "Invoices",
+                    icon: "fa fa-file-text",
+                    link: "../invoices.php"
+                },
+                {
+                    // NOT BGL, BG2, BGC
+                    label: "Uninvoiced Shipments",
+                    icon: "fa fa-file-text-o",
+                    link: "../uninvoicedshipments.php"
+                },
+
+            ],
+        }
+
+        constructor(props) {
+            super(props);
+        }
+
+        handleDrawerOpen = () => {
+            this.setState({ drawerOpen: true, hideTooltip: false });
+        };
+    
+        handleDrawerClose = () => {
+            this.setState({
+                drawerOpen: false,
+            });
+            // window.setTimeout(this.doHideTooltip, 5000);
+        };
+    
+        toggleIsHelpOpen(isNative=false) {
+            if(this.state.isHelpOpen) {
+                window.helpClose();
+            }
+            else {
+                window.helpOpen(this.toggleIsHelpOpen.bind(this));
+            }
+            this.setState({ isHelpOpen: !this.state.isHelpOpen });
+        }
+
+        printData() {
+            if(window.printData) {
+                window.printData(); // this is probably simpletable's printData function
+            }
+        }
+
+        exportData() {
+            if(window.exportData) {
+                window.exportData(); // this is probably simpletable's exportData function
+            }
+        }
+
+        onDashboardMenuSelect(event,item) {
+            var currentItem = "";
+            if(typeof item.icon != 'undefined' && item.icon != '') {
+                currentItem = '<i class="'+item.icon+'"><i>';
+            }
+            currentItem += '<i>&nbsp;' + item.label + "</i>";
+            this.setState({currentView: currentItem});
+        }
+        
+        render() {
+            return (<MuiThemeProvider theme={theme}>
+            <div style={{ width: '100%', height: '100%' }}>
+                <MyAppBar
+                    position="fixed"
+                    style={{paddingLeft: 0,
+                        width: `calc(100% - ${this.state.drawerOpen ? drawerWidth : 0}px)`,
+                        marginLeft: this.state.drawerOpen ? 260 : 0,
+                        paddingLeft: 8
+                    }}
+                >
+                    <Toolbar style={{ paddingRight: 20, paddingLeft: 0 }}>
+                        <IconButton
+                            aria-label="open drawer"
+                            onClick={this.handleDrawerOpen}
+                            style={{
+                                    marginLeft: 12,
+                                    marginRight: 20,
+                                    display: this.state.drawerOpen ? 'none' : 'block'
+                            }}
+                        >
+                            <MenuIcon style={{ color: 'white' }}/>
+                        </IconButton>
+                        <table style={{ flex: 1 }}><tr>
+                        <td>
+                            <Typography
+                                    variant="h6"
+                                    color="inherit"
+                                    style={{ whiteSpace: 'nowrap', display: this.state.drawerOpen ? 'none' : 'block',flexGrow: 5,
+                                    paddingLeft: 16,
+                                    fontFamily: 'fantasy, freesans' }}
+                                >
+                                shipping CENTRAL&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;
+                            </Typography>
+                        </td>
+                        <td>
+                            <Typography
+                                variant="h6"
+                                color="inherit"
+                                style={{ fontFamily: 'Roboto, Tahoma, Helvetica', fontSize: 24, whiteSpace: 'nowrap', paddingLeft: this.state.drawerOpen ? 16 : 0 }}
+                                dangerouslySetInnerHTML={{ __html: this.state.currentView }}
+                            >
+                            </Typography>
+                        </td>
+                        <td style={{ width: '100%' }}>&nbsp;
+                        </td></tr></table>
+                        {/* <Tooltip title="Print">
+                            <IconButton
+                                aria-label="Print"
+                                color="inherit"
+                                onClick={ this.printData.bind(this) }
+                            >
+                                <Print />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Export to CSV">
+                            <IconButton
+                                aria-label="Export to CSV"
+                                color="inherit"
+                                onClick={ this.exportData.bind(this) }
+                            >
+                                <GetAppIcon />
+                            </IconButton>
+                        </Tooltip> */}
+                        {!this.state.isHelpOpen ? (
+                        <Tooltip title="Help" id="helpButton">
+                            <IconButton
+                                id="helpButton" 
+                                aria-label="Help"
+                                color="inherit"
+                                onClick={ this.toggleIsHelpOpen.bind(this,true) }
+                            >
+                                <Help />
+                            </IconButton>
+                        </Tooltip>
+                        ) : (
+                        <Tooltip title="Close Help">
+                            <IconButton
+                                id="helpButton" 
+                                aria-label="Close Help"
+                                color="inherit"
+                                onClick={ this.toggleIsHelpOpen.bind(this,true) }
+                            >
+                                <Close />
+                            </IconButton>
+                        </Tooltip>
+                        )}
+                    </Toolbar>
+                </MyAppBar>
+                <Drawer
+                    variant="persistent"
+                    anchor="left"
+                    open={this.state.drawerOpen}
+                    style={{  
+                        width: this.state.drawerOpen ? 260 : 0,
+                        flexShrink: 0,
+                        zIndex: 5050,
+                        overflowX: 'hidden'
+                    }}
+                >
+                    <div style={{ overflowX: 'hidden', height: 64, minHeight: 64, display: 'flex', alignItems: 'center', padding: '16 8px', justifyContent: 'flex-end', width: '260px' }}>
+                        <i style={{ width: '100%', position: 'absolute', color: '#888888', fontSize: 18, fontFamily: 'fantasy, freesans', marginLeft: 16 }}>
+                            shipping<br></br>CENTRAL
+                        </i>
+                        <IconButton onClick={this.handleDrawerClose}>
+                            {this.state.drawerOpen ? (
+                                    <ChevronLeftIcon />
+                                ) : (
+                                    <ChevronRightIcon />
+                                )}
+                        </IconButton>
+                    </div>
+                    <Divider />
+                    <List style={{paddingTop: 0}}>
+                        {this.state.menuList.map((item, key) => {
+                            item.type = (typeof item.type == 'undefined') ? '' : item.type;
+                            return (<ListItem
+                                id={item.i}
+                                key={item.i}
+                                style={{ cursor: 'pointer', paddingTop: 2, paddingBottom: 2 }}
+                                data-dashboard={item.link}
+                                onClick={event=>this.onDashboardMenuSelect(event,item)}
+                                className={item.type == 'Heading' ? 'heading' : 'menuitem'}
+                            >
+                                {(item.type != 'Heading' && item.icon && (
+                                <div style={{width: 36}}>
+                                    <i style={{ fontSize: 20 }} className={item.icon}></i>
+                                </div> ))}
+                                {item.iconAltText && (
+                                    <div style={{ width: 36 }}>
+                                        <i style={{width: 36, ...item.iconAltTextStyle}}>{item.iconAltText}</i>
+                                    </div>
+                                )}
+                                {item.type == 'Heading' ? (
+                                <ListSubheader style={{ height: 40, paddingTop: 2, paddingBottom: 2 }}>
+                                    {item.label}
+                                </ListSubheader>
+                                ) : 
+                                (<ListItemText
+                                    style={{ fontSize: 10, fontWeight: item.type == 'Heading' ? 'bold' : 'normal' }}
+                                    primary={item.label}
+                                />)}
+                            </ListItem>);
+                        })
+                        }
+                    </List>
+                </Drawer>
+                <main style={{ height: '100%', marginLeft: this.state.drawerOpen ? 270 : 0 }}>
+                    <div style={{ width: '100%', height: 64 }}></div>
+                    <div id="leo-dashboard">
+
+                    </div>
+                </main>
+            </div>
+            </MuiThemeProvider>);
+        }
+    }
+
+
 
 var LEO = require("./lib/leo.js");
 var self = module.exports = $.extend({}, LEO, {
@@ -157,6 +564,9 @@ var self = module.exports = $.extend({}, LEO, {
             window.gridAPICallback = opts.gridAPICallback ? opts.gridAPICallback : null;
             window.periodLabel = opts.periodLabel ? opts.periodLabel : "Period";
             window.simpleTableHeaderHeight = opts.simpleTableHeaderHeight || null;
+            window.simpleTableRowHeight = opts.simpleTableRowHeight || null;
+            window.simpleTableLineHeight = opts.simpleTableLineHeight || null;
+            window.simpleTableExtraCellStyles = opts.simpleTableExtraCellStyles || null;
 		}
 		doStart();
 	},
@@ -176,7 +586,14 @@ var self = module.exports = $.extend({}, LEO, {
 			element.find(".leo-charts-wrapper").addClass('has-footer');
 		}
 
-        ReactDom.render( < ReactTitleBar id="reacttb" /> , document.getElementById("leo-title-bar"));
+		if (element.find('#leo-title-bar').length > 0) {
+            ReactDom.render( < ReactTitleBar id="reacttb" /> , document.getElementById("leo-title-bar"));
+        }
+        
+        console.log("element.find(leo-dashboard-framework)");
+		if (element.find('#leo-dashboard-framework').length > 0) {
+            ReactDom.render( < DashboardFramework id="reacttb" /> , document.getElementById("leo-dashboard-framework"));
+        }
 
 		element.find(".leo-filters").each(function(i, filterSection) {
 			var leoGroup = $(filterSection).data("leo-group");

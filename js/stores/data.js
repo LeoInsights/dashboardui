@@ -358,6 +358,9 @@ function parseGraph(graph) {
             if (typeof graph.forceIndex != 'undefined') {
                 dataSources[reportId].forceIndex = graph.forceIndex;
             }
+            if (typeof graph.limit != 'undefined') {
+                dataSources[reportId].limit = graph.limit;
+            }
         }
         dataSourceIds[reportId] = 1;
 

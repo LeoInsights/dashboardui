@@ -81,8 +81,8 @@ html, body {
 				left: 0px;
 			}
 		}
-	}
-
+    }
+    
 	> ul > li {
 		> a {
 			text-transform: uppercase;
@@ -470,11 +470,10 @@ section.leo-comparison  {
 		background: #d2d1d9;
 		padding: 5px;
 		width: 100%;
-		font-weight: lighter;
 		font-size: 20px;
 		color: #231f20;
 		border-bottom: 1px solid #4b4b4b;
-		font-family: 'Roboto', sans-serif;
+        font-family: 'Roboto', sans-serif;
 
 		&.disabled {
 			outline: none;
@@ -482,7 +481,7 @@ section.leo-comparison  {
 			-ms-appearance: none;
 			-moz-appearance: none;
 			-webkit-appearance: none;
-			pointer-events: none;
+            pointer-events: none;
 		}
 	}
 
@@ -593,6 +592,10 @@ figure.is-not-controller .leo-ranked-chart tbody tr {
 	cursor: pointer;
 }
 
+.leo-ranked-chart tbody tr:hover {
+    //border: 1px gray solid;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2), 0 2px 5px 0 rgba(0, 0, 0, 0.19);
+}
 
 .leo-style-gravity div article figure.is-controller {
 	background: white;
@@ -608,7 +611,7 @@ figure.is-not-controller .leo-ranked-chart tbody tr {
 			display: block;
 			width: calc(~"100% + 40px");
 			height: 42px;
-			background: #676565;
+			background: #ccc7c7;
 			margin: -20px -20px 20px;
 
 			~ .table-wrapper {

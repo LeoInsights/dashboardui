@@ -47,7 +47,12 @@ var buildOpts = {
 	transform: [babelify.configure({
 		//presets: ["env", "react"],
 		presets: ["react"],
-		plugins: ["transform-object-rest-spread"]
+		plugins: ["transform-object-rest-spread"],
+		env: {
+			development: {
+				compact: false
+			}
+		}
 	  })]
 };
 var opts = assign({}, watchify.args, buildOpts);

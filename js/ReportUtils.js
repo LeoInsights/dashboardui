@@ -39,6 +39,10 @@ module.exports = Object.freeze({
             apiData.forceIndex = data.forceIndex;
         }
 
+        if (typeof data.limit != 'undefined') {
+            apiData.limit = data.limit;
+        }
+
         for (var i = 0; i < columns.length; i++) {
             var col = columns[i];
             if (col) {
