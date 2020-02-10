@@ -361,6 +361,14 @@ function parseGraph(graph) {
             if (typeof graph.limit != 'undefined') {
                 dataSources[reportId].limit = graph.limit;
             }
+            if (typeof graph.mergeIgnoreColumns != 'undefined') {
+                dataSources[reportId].mergeIgnoreColumns =
+                    graph.mergeIgnoreColumns;
+            }
+            if (typeof graph.factDimDoNotAssociate != 'undefined') {
+                dataSources[reportId].factDimDoNotAssociate =
+                    graph.factDimDoNotAssociate;
+            }
         }
         dataSourceIds[reportId] = 1;
 

@@ -42,6 +42,12 @@ module.exports = Object.freeze({
         if (typeof data.limit != 'undefined') {
             apiData.limit = data.limit;
         }
+        if (typeof data.mergeIgnoreColumns != 'undefined') {
+            apiData.mergeIgnoreColumns = data.mergeIgnoreColumns;
+        }
+        if (typeof data.factDimDoNotAssociate != 'undefined') {
+            apiData.factDimDoNotAssociate = data.factDimDoNotAssociate;
+        }
 
         for (var i = 0; i < columns.length; i++) {
             var col = columns[i];

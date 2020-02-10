@@ -21,6 +21,12 @@ module.exports = require('../react/flux/action.js')(function(my, dispatcher) {
         if (typeof data.limit != 'undefined') {
             apiData.limit = data.limit;
         }
+        if (typeof data.mergeIgnoreColumns != 'undefined') {
+            apiData.mergeIgnoreColumns = data.mergeIgnoreColumns;
+        }
+        if (typeof data.factDimDoNotAssociate != 'undefined') {
+            apiData.factDimDoNotAssociate = data.factDimDoNotAssociate;
+        }
 
         if (apiData.metrics.length > 0) {
             api.post('report', apiData, function(result) {
