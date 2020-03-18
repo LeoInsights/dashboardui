@@ -17,7 +17,7 @@ var fs = require("fs");
 
 var liveVersion = ".1.10.34.";
 var devVersion = ".1.10.";
-var cdn = "https://s3-us-west-2.amazonaws.com/cdnleo";
+var cdn = "..";
 var version = ".";
 
 AWS.config.update({
@@ -34,21 +34,33 @@ gulp.task('less', function() {
 		.pipe(gulp.dest('./dist/'));
 });
 gulp.task('copy', done => {
+	fs.createReadStream('dist/leo-oem.js').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.js'));
+	fs.createReadStream('dist/leo-oem.css').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.css'));
+	gutil.log("Finished copy");
 	done();
 });
 
 var buildOpts = {
 	entries: ['./js/dashboard.js'],
 	standalone: 'LEO',
-	transform: [babelify]
+	transform: [babelify.configure({
+		//presets: ["env", "react"],
+		presets: ["react"],
+		plugins: ["transform-object-rest-spread"],
+		env: {
+			development: {
+				compact: false
+			}
+		}
+	  })]
 };
 var opts = assign({}, watchify.args, buildOpts);
 gulp.task('js', function() {
 	return bundle(browserify(opts));
 });
 var b;
-gulp.task('watch', gulp.series(['less', 'copy'], function() {
-	cdn = "file:///C:/Steve/Businesses/Event%20System/code/dashboard";
+gulp.task('watch', gulp.series(['less'], function() {
+	cdn = "../";
 	//cdn = "file:///home/darin/Documents/leo/leo/dashboard/";
 
 	b = watchify(browserify(opts));
@@ -57,11 +69,11 @@ gulp.task('watch', gulp.series(['less', 'copy'], function() {
 	});
 	b.on('log', function(log) {
 		gutil.log("Finished '" + gutil.colors.green('build') + "'", log);
+		gulp.series(['js', 'less', 'copy'])();
 	});
 	gulp.watch('../css/**', gulp.series('less'));
-
 	return bundle(b);
-}));
+},['copy']));
 
 gulp.task('build', gulp.series(['js', 'less', 'copy']));
 gulp.task('default', gulp.series('build'));

@@ -81,8 +81,8 @@ html, body {
 				left: 0px;
 			}
 		}
-	}
-
+    }
+    
 	> ul > li {
 		> a {
 			text-transform: uppercase;
@@ -124,8 +124,16 @@ html, body {
 	width: 100%;
 	top: 0; bottom: 0;
 	&.has-header {
-		top: 55px;
-	}
+		top: 64px;
+    }
+    &.has-header2 {
+        top: 64px;
+    }
+    .has-header2 {
+        .has-header {
+            top: 119px !important;
+        }
+    }
 	&.has-footer {
 		bottom: 30px;
 	}
@@ -196,11 +204,11 @@ html, body {
 
 
 #tool-bar {
-	background: #676565;
+	/* background: #676565; */
 	font-family: 'Roboto', sans-serif;
-	color: white;
+	/* color: white; */
 	height: 55px;
-	margin-bottom: 10px;
+	margin-bottom: 0px;
 	.leo-filters {
 		display: none;
 		&.active {
@@ -216,10 +224,15 @@ html, body {
 
 		.filter-wrapper {
 			height: 55px;
+			width: auto !important;
+			border-right: 1px solid #eeeeee;
+			border-left: 1px solid #eeeeee;
 			.filter-heading {
 				height: 55px;
-				width: 225px;
-				padding: 8px;
+				padding-top: 8px;
+				padding-bottom: 8px;
+				padding-right: 20px;
+				padding-left: 20px;
 			}
 			.filter-select {
 				position: absolute;
@@ -228,10 +241,10 @@ html, body {
 				xdisplay: none;
 			}
 			.filter-name {
-				color: white;
+				color: #444444;
 			}
 			.filter-values {
-				color: #d2d1d9;
+				color: #333333;
 			}
 		}
 		.leo-timeframe-period {
@@ -457,11 +470,10 @@ section.leo-comparison  {
 		background: #d2d1d9;
 		padding: 5px;
 		width: 100%;
-		font-weight: lighter;
 		font-size: 20px;
 		color: #231f20;
 		border-bottom: 1px solid #4b4b4b;
-		font-family: 'Roboto', sans-serif;
+        font-family: 'Roboto', sans-serif;
 
 		&.disabled {
 			outline: none;
@@ -469,7 +481,7 @@ section.leo-comparison  {
 			-ms-appearance: none;
 			-moz-appearance: none;
 			-webkit-appearance: none;
-			pointer-events: none;
+            pointer-events: none;
 		}
 	}
 
@@ -580,6 +592,10 @@ figure.is-not-controller .leo-ranked-chart tbody tr {
 	cursor: pointer;
 }
 
+.leo-ranked-chart tbody tr:hover {
+    //border: 1px gray solid;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2), 0 2px 5px 0 rgba(0, 0, 0, 0.19);
+}
 
 .leo-style-gravity div article figure.is-controller {
 	background: white;
@@ -595,7 +611,7 @@ figure.is-not-controller .leo-ranked-chart tbody tr {
 			display: block;
 			width: calc(~"100% + 40px");
 			height: 42px;
-			background: #676565;
+			background: #ccc7c7;
 			margin: -20px -20px 20px;
 
 			~ .table-wrapper {

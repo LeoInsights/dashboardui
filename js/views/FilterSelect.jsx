@@ -4,19 +4,37 @@ var React = require('react');
 var DateRangePicker = require('./DateRangePicker.jsx');
 
 
-module.exports = React.createClass({
+class FilterSelect extends React.Component {
 
-	operators: [
+	operators = [
 		'==', '=',
 		'<>', '!=', '!',
 		'=>', '>=',
 		'=<', '<=',
 		'between', '><',
 		'>', '<'
-	],
+	]
 
-	getInitialState: function() {
+    state = {
+        isDateRange: false,
+        isDynamic: false,
+        isDate: false,
+        singleValue: false,
+        showEditor: false,
+        filter: null,
+        searchText: '',
+        searchIndex: -1,
+        searchResults: [],
+        comparison: null
+    };
 
+	constructor(props) {
+        super(props);
+        this.searchText = React.createRef();
+        this.filterSelect = React.createRef();
+    }
+
+    componentDidMount() {
 		var filter = this.props.filter;
 
 		//fix value for dynamic ranges
@@ -50,7 +68,19 @@ module.exports = React.createClass({
 
 		this.autoComplete(filter.id, '');
 
-		return {
+		// this.setState({
+		// 	isDateRange: (filter.comparison && filter.comparison == 'between'),
+		// 	isDynamic: (filter.value && filter.value[0] && !filter.value[0].toString().match(/\d{4}-\d{2}-\d{2}/)),
+		// 	isDate: (filter.id.toLowerCase().indexOf('date.id') > -1 || filter.id.toLowerCase().indexOf('date._id') > -1 || filter.id.toLowerCase().indexOf('date.date') !== -1),
+		// 	singleValue: (filter.singleValue),
+		// 	showEditor: (this.props.editingFilter == filter.id),
+		// 	filter: filter,
+		// 	searchText: '',
+		// 	searchIndex: -1,
+		// 	searchResults: [],
+		// 	comparison: comparison
+		// });
+		this.setState({
 			isDateRange: (filter.comparison && filter.comparison == 'between'),
 			isDynamic: (filter.value && filter.value[0] && !filter.value[0].toString().match(/\d{4}-\d{2}-\d{2}/)),
 			isDate: (filter.id.toLowerCase().indexOf('date.id') > -1 || filter.id.toLowerCase().indexOf('date._id') > -1 || filter.id.toLowerCase().indexOf('date.date') !== -1),
@@ -61,11 +91,24 @@ module.exports = React.createClass({
 			searchIndex: -1,
 			searchResults: [],
 			comparison: comparison
-		};
-	},
+		}, ()=> {
+            this._isMounted = true
+            this.initDatePicker();
+            if (this.refs.searchText) {
+                this.refs.searchText.select();
+            }
+    
+            var offset = $(this.refs.filterSelect).offset()
+            if (offset.top > window.innerHeight / 2) {
+                $(this.refs.filterSelect).addClass('flow-up')
+            } else {
+                $(this.refs.filterSelect).removeClass('flow-up')
+            }    
+        });
 
+    }
 
-	componentWillReceiveProps: function(nextProps) {
+	componentWillReceiveProps(nextProps) {
 		if (nextProps.saving == true) {
 			this.props.updateReportFilter(this.state.filter);
 		}
@@ -81,42 +124,21 @@ module.exports = React.createClass({
 		}
 
 		this.setState({filter:filter});
-	},
+	}
 
-
-	componentDidMount: function() {
-
-		this._isMounted = true
-		this.initDatePicker();
-		if (this.refs.searchText) {
-			this.refs.searchText.select();
-		}
-
-		var offset = $(this.refs.filterSelect).offset()
-		if (offset.top > window.innerHeight / 2) {
-			$(this.refs.filterSelect).addClass('flow-up')
-		} else {
-			$(this.refs.filterSelect).removeClass('flow-up')
-		}
-		
-	},
-
-
-	componentWillUnmount: function() {
+	componentWillUnmount() {
 
 		this._isMounted = false
 
-	},
+	}
 
-
-	componentDidUpdate: function() {
+	componentDidUpdate() {
 
 		this.initDatePicker()
 
-	},
+	}
 
-
-	initDatePicker: function() {
+	initDatePicker() {
 		var thisComponent = this;
 		if (this.state.isDate && !(this.state.isDynamic || this.state.isDateRange)) {
 			var values = this.state.filter.value;
@@ -125,7 +147,7 @@ module.exports = React.createClass({
 					dateFormat: "yy-mm-dd",
 					defaultDate: (values.length > 0 ? values[0] : null),
 					addDates: (values.length > 0 ? values : null),
-					onSelect: function(date, inst) {
+					onSelect(date, inst) {
 						thisComponent.toggleValue(date);
 					}
 				});
@@ -136,10 +158,9 @@ module.exports = React.createClass({
 			this.refs.searchText.focus();
 		}
 
-	},
+	}
 
-
-	autoComplete: function(filter_id, term) {
+	autoComplete(filter_id, term) {
 		if (this.props.autoComplete) {
 			var thisComponent = this;
 			this.props.autoComplete(filter_id, term, (results) => {
@@ -159,10 +180,9 @@ module.exports = React.createClass({
 				}
 			}, this.props.filter.api);
 		}
-	},
+	}
 
-
-	catchSpecialKeys: function(e) {
+	catchSpecialKeys(e) {
 		switch(e.keyCode) {
 			case 27: //esc
 			case 9: //tab
@@ -182,10 +202,9 @@ module.exports = React.createClass({
 				}
 			break;
 		}
-	},
+	}
 
-
-	searchFilter: function(e) {
+	searchFilter(e) {
 		e.preventDefault();
 		e.stopPropagation();
 
@@ -225,10 +244,9 @@ module.exports = React.createClass({
 				this.autoComplete(this.state.filter.id, term);
 			break;
 		}
-	},
+	}
 
-
-	setRange: function(values) {
+	setRange(values) {
 		var filter = this.state.filter;
 		filter.value = values;
 		filter.comparison = 'between';
@@ -238,20 +256,18 @@ module.exports = React.createClass({
 		}
 		filter.updated = true;
 		this.setState({ filter: filter });
-	},
+	}
 
-
-	toggleValue: function(id) {
+	toggleValue(id) {
 		var filter = this.state.filter;
 		if (filter.value.indexOf(id) == -1) {
 			this.addValue(id);
 		} else {
 			this.removeValue(id);
 		}
-	},
+	}
 
-
-	addValue: function(id) {
+	addValue(id) {
 		var filter = this.state.filter;
 		id = $.trim(id);
 		for(var i=0;i<this.operators.length;i++) {
@@ -294,10 +310,9 @@ module.exports = React.createClass({
 		if (this.state.singleValue) {
 			this.props.delayedClose(true);
 		}
-	},
+	}
 
-
-	removeValue: function(id, e) {
+	removeValue(id, e) {
 		if (e) { e.stopPropagation(); }
 
 		var filter = this.state.filter;
@@ -308,10 +323,9 @@ module.exports = React.createClass({
 		}
 		filter.updated = true;
 		this.setState({ filter: filter });
-	},
+	}
 
-
-	toggleCheck: function(id, e) {
+	toggleCheck(id, e) {
 		e.stopPropagation();
 		var filter = this.state.filter;
 
@@ -336,19 +350,21 @@ module.exports = React.createClass({
 		}
 		filter.updated = true;
 		this.setState({ filter: filter });
-	},
+	}
 
-
-	setSearchIndex: function(index) {
+	setSearchIndex(index) {
 		this.setState({searchIndex:index})
-	},
+	}
 
-
-	render: function()  {
+	render()  {
 
 		var thisComponent = this;
 
-		var filter = this.state.filter;
+        var filter = this.state.filter;
+        
+        if(filter == null) {
+            return <div/>;
+        }
 
 		var possibleValues = [];
 		for(var value in filter.checkboxes) {
@@ -373,7 +389,7 @@ module.exports = React.createClass({
 				?  (
 						(this.state.isDynamic || this.state.isDateRange)
 
-						? <DateRangePicker filter={filter} setRange={this.setRange} delayedClose={this.props.delayedClose} />
+						? <DateRangePicker filter={filter} setRange={this.setRange.bind(this)} delayedClose={this.props.delayedClose} />
 
 						: <div className="clear-fix text-center" style={{padding: '10px'}}>
 							<div id={'filter_date_picker_'+filter.id} ref="multidatePicker"></div>
@@ -389,7 +405,7 @@ module.exports = React.createClass({
 							var inputType = thisComponent.props.filter.singleChoice ? 'radio' : 'checkbox';
 							return <div key={index}>
 								<label>
-									<input type={inputType} name={thisComponent.props.filter.id} defaultChecked={possible.checked} onClick={thisComponent.toggleCheck.bind(null, possible.value)} />
+									<input type={inputType} name={thisComponent.props.filter.id} defaultChecked={possible.checked} onClick={thisComponent.toggleCheck.bind(thisComponent, possible.value)} />
 									{possible.value}
 								</label>
 								{
@@ -406,7 +422,7 @@ module.exports = React.createClass({
 					{
 						!filter.hideTypeAhead
 						? <div className="filter-input-box">
-							<input ref="searchText" placeholder="Type to Add Value..." defaultValue={defaultValue} onKeyDown={this.catchSpecialKeys} onKeyUp={this.searchFilter} />
+							<input ref="searchText" placeholder="Type to Add Value..." defaultValue={defaultValue} onKeyDown={this.catchSpecialKeys.bind(this)} onKeyUp={this.searchFilter.bind(this)} />
 						</div>
 						: false
 					}
@@ -415,7 +431,7 @@ module.exports = React.createClass({
 					{
 						this.state.searchResults.map(function(result, index) {
 							var className = (filter && filter.value && filter.value.indexOf(result.id) == -1 ? '' : 'selected') + (thisComponent.state.searchIndex == index ? ' hover' : '');
-							return <li key={index} className={className} onMouseEnter={thisComponent.setSearchIndex.bind(null, index)} onClick={thisComponent.addValue.bind(null, result.id)}>{result.text}</li>
+							return <li key={index} className={className} onMouseEnter={index=>thisComponent.setSearchIndex(index)} onClick={thisComponent.addValue.bind(thisComponent, result.id)}>{result.text}</li>
 						})
 					}
 					</ul>
@@ -426,4 +442,6 @@ module.exports = React.createClass({
 
 	}
 
-});
+}
+
+module.exports =  FilterSelect;

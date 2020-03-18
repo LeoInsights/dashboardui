@@ -426,6 +426,12 @@ module.exports = function(element, chart, options, my) {
 
 	my.changeChart = that.changeChart = function(newParams, replace, keepFilters) {
 
+        if(newParams == null) {
+            console.log("changeChart: newParams == NULL. Reload only.")
+            render(); 
+            return;
+        }        
+
 		my.graphWatching.stop()
 		if (replace) {
 			that.columns = []

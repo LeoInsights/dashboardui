@@ -1,4 +1,5 @@
 var React = require('react');
+var PropTypes = require('react-prop-types');
 
 var FieldsStore = require('../../stores/FieldsStore');
 var ReportActions = require('../../actions/ReportActions');
@@ -8,21 +9,82 @@ var IdUtils = require('../../utils/IdUtils');
 var InfoBox = require('../common/infoBox.jsx');
 //var FieldPicker = require('./fieldPicker.jsx');
 
-module.exports = React.createClass({
+class columnSearch extends React.Component {
 
-	searchResults: [],
+	searchResults = [];
 
-	browseResults: [],
+	browseResults = [];
 
-	contextTypes: {
-		sendToPivot: React.PropTypes.func,
-		show_dialog: React.PropTypes.func,
-		selected_field: React.PropTypes.object
-	},
+	contextTypes = {
+		sendToPivot: PropTypes.func,
+		show_dialog: PropTypes.func,
+		selected_field: PropTypes.object
+	};
 
+    state = {
+        searchText: '',
+        searchIndex: null,
+        readyToAdd: [],
+        parent_id: null,
+        action: '',
+        which: null,
+        position: [],
 
-	getInitialState: function() {
-		var props = (this.props.defaults ? this.props.defaults : this.props);
+        chart: '',
+        showTree: false,
+        browseIndex: null,
+        openBranch: false,
+
+        isCalculatedField: false,
+        showFx: null
+    };
+
+	constructor(props) {
+        super(props);
+    }
+
+	componentDidMount() {
+		var thisComponent = this;
+		this.refs.searchText.focus()
+		this.refs.searchText.selectionStart = this.refs.searchText.value.length
+
+		setTimeout(function() {
+			$('.popup-menu').on('mouseenter', '.leaf, .search-results li', function() {
+				if ($(this).hasClass('attribute')) { //only dimension attributes for now
+					var examples = $(this).find('aside .info-examples');
+					if (examples.is(':empty')) {
+						var column_id = $(this).find('aside').data('column_id');
+						if (column_id.slice(-6) == '|count' || column_id.indexOf('.') == -1) {
+							examples.append($('<strong></strong>'));
+						} else {
+							ReportFilterActions.autocomplete2(column_id, '', function(results) {
+								if (results && results.suggestions) {
+									examples.append($('<strong>Examples: </strong>'));
+									for(let i=0;i<Math.min(results.suggestions.length,4);i++) {
+										if ($.trim(results.suggestions[i].value) != '') {
+											examples.append($('<em></em>').text(results.suggestions[i].value));
+										}
+									}
+								} else { //failed, let's not try again
+									examples.append($('<strong></strong>'));
+								}
+							});
+						}
+					}
+				}
+				var position = $(this).offset()
+				if (thisComponent.props.maskOff) {
+					var maskPosition = $(this).closest('.change-column').find('.mask').offset()
+					position.left -= maskPosition.left
+					position.top -= maskPosition.top
+				}
+				$(this).find('.info-box').css({ left: position.left, top:position.top}).show();
+			}).on('mouseleave', '.leaf, .search-results li', function() {
+				$(this).find('.info-box').hide();
+			});
+        }, 0);
+        
+        var props = (this.props.defaults ? this.props.defaults : this.props);
 
 		var browseIndex = -1;
 		var searchIndex = -1;
@@ -119,7 +181,7 @@ module.exports = React.createClass({
 
 		}
 
-		return {
+		this.setState({
 			searchText: '',
 			searchIndex: searchIndex,
 			readyToAdd: [],
@@ -135,56 +197,13 @@ module.exports = React.createClass({
 
 			isCalculatedField: false,
 			showFx: showFx
-		}
-	},
+		});
 
+	}
 
-	componentDidMount: function() {
-		var thisComponent = this;
-		this.refs.searchText.focus()
-		this.refs.searchText.selectionStart = this.refs.searchText.value.length
+	lastFieldSent = null;
 
-		setTimeout(function() {
-			$('.popup-menu').on('mouseenter', '.leaf, .search-results li', function() {
-				if ($(this).hasClass('attribute')) { //only dimension attributes for now
-					var examples = $(this).find('aside .info-examples');
-					if (examples.is(':empty')) {
-						var column_id = $(this).find('aside').data('column_id');
-						if (column_id.slice(-6) == '|count' || column_id.indexOf('.') == -1) {
-							examples.append($('<strong></strong>'));
-						} else {
-							ReportFilterActions.autocomplete2(column_id, '', function(results) {
-								if (results && results.suggestions) {
-									examples.append($('<strong>Examples: </strong>'));
-									for(let i=0;i<Math.min(results.suggestions.length,4);i++) {
-										if ($.trim(results.suggestions[i].value) != '') {
-											examples.append($('<em></em>').text(results.suggestions[i].value));
-										}
-									}
-								} else { //failed, let's not try again
-									examples.append($('<strong></strong>'));
-								}
-							});
-						}
-					}
-				}
-				var position = $(this).offset()
-				if (thisComponent.props.maskOff) {
-					var maskPosition = $(this).closest('.change-column').find('.mask').offset()
-					position.left -= maskPosition.left
-					position.top -= maskPosition.top
-				}
-				$(this).find('.info-box').css({ left: position.left, top:position.top}).show();
-			}).on('mouseleave', '.leaf, .search-results li', function() {
-				$(this).find('.info-box').hide();
-			});
-		}, 0);
-	},
-
-
-	lastFieldSent: null,
-
-	componentDidUpdate: function() {
+	componentDidUpdate() {
 		if (this.state.isCalculatedField) {
 			this.refs.calculatedField.focus();
 		} else {
@@ -222,22 +241,19 @@ module.exports = React.createClass({
 			}
 		}
 
-	},
+	}
 
-
-	componentWillUnmount: function() {
+	componentWillUnmount() {
 		$(document.body).removeClass('column-builder-picking-metric');
-	},
+	}
 
-
-	fieldSelected: function(selectedField) {
+	fieldSelected(selectedField) {
 		if (selectedField.id) {
 			$('.column-builder-field-target').append('<span contenteditable="false">'+selectedField.id+'</span>')
 		}
-	},
-
-
-	replaceColumn: function(column) {
+    }
+    
+	replaceColumn(column) {
 		var id = (column ? column.id : null);
 		if (!id) {
 			var column = this.state.readyToAdd.shift();
@@ -343,20 +359,17 @@ module.exports = React.createClass({
 
 		}
 
-	},
+	}
 
-
-	setSearchIndex: function(index) {
+	setSearchIndex(index) {
 		this.setState({searchIndex:index})
-	},
+	}
 
-
-	setBrowseIndex: function(index) {
+	setBrowseIndex(index) {
 		this.setState({browseIndex:index});
-	},
+	}
 
-
-	catchSpecialKeys: function(e) {
+	catchSpecialKeys(e) {
 		switch(e.keyCode) {
 			case 27: //esc
 			case 9: //tab
@@ -387,10 +400,9 @@ module.exports = React.createClass({
 				this.setState({ searchIndex: searchIndex });
 			break;
 		}
-	},
+	}
 
-
-	searchColumns: function(e) {
+	searchColumns(e) {
 		e.preventDefault();
 		e.stopPropagation();
 		switch(e.keyCode) {
@@ -476,17 +488,15 @@ module.exports = React.createClass({
 			break;
 		}
 
-	},
+	}
 
-
-	removeReady: function(index) {
+	removeReady(index) {
 		var readyToAdd = this.state.readyToAdd;
 		readyToAdd.splice(index, 1);
 		this.setState({readyToAdd:readyToAdd});
-	},
+	}
 
-
-	boldSearchText: function(str) {
+	boldSearchText(str) {
 		if (this.state.searchText != '') {
 			var searchTextRegExp = new RegExp(this.state.searchText , "i");
 			var rawMarkup = str.replace(searchTextRegExp, '<b>$&</b>')
@@ -499,10 +509,9 @@ module.exports = React.createClass({
 		}
 
 		return { __html: rawMarkup };
-	},
+	}
 
-
-	showAdvanced: function(fx) {
+	showAdvanced(fx) {
 		switch(this.state.action) {
 			case 'add_fact':
 				this.context.show_dialog('advanced', { id:this.props.id, editing:'row', iterator:this.props.iterator, params: this.props.params, fx:fx });
@@ -513,31 +522,27 @@ module.exports = React.createClass({
 			break;
 		}
 		this.props.closeChangeColumn();
-	},
+	}
 
-
-	setChartType: function(chart) {
+	setChartType(chart) {
 		this.setState({
 			chart: chart
 		});
-	},
+	}
 
-
-	toggleTree: function(toggle) {
+	toggleTree(toggle) {
 		if (toggle === true || toggle === false) {
 			this.setState({ showTree: toggle });
 		} else {
 			this.setState({ showTree: !this.state.showTree });
 		}
-	},
+	}
 
-
-	toggleBranch: function(branch) {
+	toggleBranch(branch) {
 		this.setState({ openBranch: (this.state.openBranch == branch ? false : branch) });
-	},
+	}
 
-
-	initFx: function() {
+	initFx() {
 
 		this.showAdvanced('fx');
 
@@ -549,16 +554,14 @@ module.exports = React.createClass({
 		*/
 
 
-	},
+	}
 
-
-	uninitFx: function() {
+	uninitFx() {
 		$(document.body).removeClass('column-builder-picking-metric');
 		this.setState({ isCalculatedField: false });
-	},
+	}
 
-
-	columnClicked: function(column) {
+	columnClicked(column) {
 
 		var thisComponent = this;
 		var calculatedField = this.refs.calculatedField;
@@ -597,10 +600,9 @@ module.exports = React.createClass({
 		} else {
 			this.replaceColumn(column);
 		}
-	},
+	}
 
-
-	buildExpression: function() {
+	buildExpression() {
 		var calculatedField = this.refs.calculatedField;
 		var expression = $(calculatedField).text().replace(/\s/g, '');
 		var column = {
@@ -615,10 +617,9 @@ module.exports = React.createClass({
 		}
 		this.replaceColumn(column);
 		$(document.body).removeClass('column-builder-picking-metric');
-	},
+	}
 
-
-	render: function() {
+	render() {
 
 		var thisComponent = this;
 
@@ -917,6 +918,6 @@ module.exports = React.createClass({
 
 		</div>)
   }
+}
 
-
-})
+module.exports = columnSearch;
