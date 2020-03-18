@@ -1024,17 +1024,19 @@ class SimpleTable extends React.Component {
 					return ( 
                         <div className="simple-table-wrapper">
 
-                        {/* <table className={className}>
-                        <thead>
-                            <tr className="title">
-                                <td><span title="download">{this.props.options.title || this.props.spec.title}</span><i className="icon-download" onClick={this.exportData.bind(this, rows, this.columns)}></i></td>
-                            </tr>
-                        </thead>
-                        </table> */}
+                        {!window.globalTitleBar && 
+                            <table className={className}>
+                                <thead>
+                                    <tr className="title">
+                                        <td><span title="download">{this.props.options.title || this.props.spec.title}</span><i className="icon-download" onClick={this.exportData.bind(this, rows, this.columns)}></i></td>
+                                    </tr>
+                                </thead>
+                            </table>
+                        }
                         <div
                             style={{
                                 width: '100%',
-                                height: '100%'
+                                height: window.globalTitleBar ? '100%' : 'calc(100% - 39px)'
                             }}
                             className="ag-theme-balham my-grid"
                         >

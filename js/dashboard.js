@@ -586,8 +586,10 @@ var self = module.exports = $.extend({}, LEO, {
 			element.find(".leo-charts-wrapper").addClass('has-footer');
 		}
 
+        window.globalTitleBar = false;
 		if (element.find('#leo-title-bar').length > 0) {
             ReactDom.render( < ReactTitleBar id="reacttb" /> , document.getElementById("leo-title-bar"));
+            window.globalTitleBar = true;
         }
         
         console.log("element.find(leo-dashboard-framework)");

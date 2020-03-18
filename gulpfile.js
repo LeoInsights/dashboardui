@@ -36,7 +36,6 @@ gulp.task('less', function() {
 gulp.task('copy', done => {
 	fs.createReadStream('dist/leo-oem.js').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.js'));
 	fs.createReadStream('dist/leo-oem.css').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.css'));
-	fs.createReadStream('dist/leo-oem.css').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/css/leo-oem.css'));
 	gutil.log("Finished copy");
 	done();
 });
