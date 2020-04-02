@@ -272,12 +272,13 @@ class Filter extends React.Component {
                             : this.open.bind(this)
                     }
                 >
-                    {this.props.removeFilter ? (
+                    {this.props.clearFilter ? (
                         <i
                             className="icon-cancel pull-right"
-                            onClick={this.props.removeFilter.bind(
+                            onClick={this.props.clearFilter.bind(
                                 null,
-                                filter.id
+                                event,
+                                filter
                             )}
                         />
                     ) : (
@@ -298,6 +299,15 @@ class Filter extends React.Component {
                     <FilterSelect
                         filter={filter}
                         removeFilter={this.props.removeFilter}
+                        clearFilter={
+                            typeof this.props.clearFilter != 'undefined'
+                                ? this.props.clearFilter.bind(
+                                      null,
+                                      event,
+                                      filter
+                                  )
+                                : null
+                        }
                         delayedClose={f => this.close(event, f)}
                         autoComplete={this.props.autoComplete}
                     />

@@ -48,6 +48,16 @@ class Filters extends React.Component {
         this.state.timefilter = filter.value;
         OptionActions.setTimeFilter('default', filter.value);
     }
+    onTimeFrameClear(event, filter) {
+        event.stopPropagation();
+        event.preventDefault();
+        event.cancelBubble = true;
+        event.stopImmediatePropagation();
+        filter.value = [];
+        this.state.timefilter = [];
+        OptionActions.setTimeFilter('default', filter.value);
+        return false;
+    }
     onTimeFrameDelete(filter_id) {
         OptionActions.setTimeFilter('default', '');
     }
@@ -56,6 +66,14 @@ class Filters extends React.Component {
     }
     onFilterDelete(filter_id) {
         OptionActions.deleteFilter('default', filter_id);
+    }
+    onFilterClear(event, filter) {
+        event.stopPropagation();
+        event.preventDefault();
+        event.cancelBubble = true;
+        event.stopImmediatePropagation();
+        filter.value = [];
+        OptionActions.updateFilter('default', filter);
     }
     autoComplete(filter_id, term, callback, api) {
         if (window.leo.autoComplete) {
@@ -97,7 +115,8 @@ class Filters extends React.Component {
                             updateReportFilter={this.onTimeFrameChange.bind(
                                 this
                             )}
-                            removeFilter={this.onTimeFrameDelete.bind(this)}
+                            removeFilter={this.onTimeFrameClear.bind(this)}
+                            clearFilter={this.onTimeFrameClear.bind(this)}
                         />
                     ) : (
                         false
@@ -142,6 +161,7 @@ class Filters extends React.Component {
                                     this
                                 )}
                                 removeFilter={that.onFilterDelete.bind(this)}
+                                clearFilter={that.onFilterClear.bind(this)}
                                 autoComplete={that.autoComplete.bind(this)}
                             />
                         );
