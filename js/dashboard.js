@@ -1,72 +1,96 @@
 var ReactDom = require('react-dom');
 
-import React from 'react';
+import React, { Fragment, useState, useEffect } from 'react';
 
 var Filters = require('./views/filters.jsx');
 var OptionActions = require('./actions/options.js');
 var DataActions = require('./actions/data.js');
 var TableView = require('./views/controls/tableView.jsx');
 var api = require('./webAPI.js');
+var json5 = require('json5');
 
 var chartFigure = require('./lib/chartFigure.js');
 
 var Highcharts = require('highcharts');
+//import '@babel/polyfill';
+require('jquery');
+//require('popper');
+require('bootstrap');
+//require('mdbootstrap');
+
+// load AFTER jquery
+require('highcharts/modules/exporting')(Highcharts);
+require('highcharts/modules/export-data')(Highcharts);
+
+
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+    faDownload,
+    faPrint,
+    faCircle,
+    faQuestion,
+    faTimes,
+    faBars,
+} from '@fortawesome/free-solid-svg-icons';
+
+library.add(faCircle);
 
 var charts = [];
 
-import classNames from 'classnames';
+// import classNames from 'classnames';
 
-import AppBar from '@material-ui/core/AppBar';
-import Button from '@material-ui/core/Button';
-import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-import Close from '@material-ui/icons/Close';
-import Divider from '@material-ui/core/Divider';
-import Drawer from '@material-ui/core/Drawer';
-import GetAppIcon from '@material-ui/icons/GetApp';
-import Help from '@material-ui/icons/Help';
-import IconButton from '@material-ui/core/IconButton';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListSubheader from '@material-ui/core/ListSubheader';
-import MenuIcon from '@material-ui/icons/Menu';
-import Print from '@material-ui/icons/Print';
-import TextField from '@material-ui/core/TextField';
-import Toolbar from '@material-ui/core/Toolbar';
-import Tooltip from '@material-ui/core/Tooltip';
-import Typography from '@material-ui/core/Typography';
-import {
-    createMuiTheme,
-    MuiThemeProvider,
-    styled,
-} from '@material-ui/core/styles';
+// import AppBar from '@material-ui/core/AppBar';
+// import Button from '@material-ui/core/Button';
+// import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
+// import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+// import Close from '@material-ui/icons/Close';
+// import Divider from '@material-ui/core/Divider';
+// import Drawer from '@material-ui/core/Drawer';
+// import GetAppIcon from '@material-ui/icons/GetApp';
+// import Help from '@material-ui/icons/Help';
+// import IconButton from '@material-ui/core/IconButton';
+// import List from '@material-ui/core/List';
+// import ListItem from '@material-ui/core/ListItem';
+// import ListItemText from '@material-ui/core/ListItemText';
+// import ListSubheader from '@material-ui/core/ListSubheader';
+// import MenuIcon from '@material-ui/icons/Menu';
+// import Print from '@material-ui/icons/Print';
+// import TextField from '@material-ui/core/TextField';
+// import Toolbar from '@material-ui/core/Toolbar';
+// import Tooltip from '@material-ui/core/Tooltip';
+// import Typography from '@material-ui/core/Typography';
+// import {
+//     createMuiTheme,
+//     MuiThemeProvider,
+//     styled,
+// } from '@material-ui/core/styles';
 
 const drawerWidth = 260;
 
-const theme = createMuiTheme({
-    palette: {
-        primary: { main: '#0067b4' },
-    },
-    typography: {
-        useNextVariants: true,
-    },
-});
+// const theme = createMuiTheme({
+//     palette: {
+//         primary: { main: '#0067b4' },
+//     },
+//     typography: {
+//         useNextVariants: true,
+//     },
+// });
 
-const MyAppBar = styled(AppBar)({
-    root: {
-        overflowY: 'hidden',
-    },
-    appBar: {
-        paddingLeft: 0,
-    },
-    appBarShift: {
-        width: `calc(100% - ${drawerWidth}px)`,
-        marginLeft: drawerWidth,
-        paddingLeft: 16,
-        paddingRight: 16,
-    },
-});
+// const MyAppBar = styled(AppBar)({
+//     root: {
+//         overflowY: 'hidden',
+//     },
+//     appBar: {
+//         paddingLeft: 0,
+//     },
+//     appBarShift: {
+//         width: `calc(100% - ${drawerWidth}px)`,
+//         marginLeft: drawerWidth,
+//         paddingLeft: 16,
+//         paddingRight: 16,
+//     },
+// });
 
 var tbForceUpdate = false;
 // this will be called by simpletable when selections change
@@ -84,348 +108,312 @@ function multiSelectCountChange() {
 
 window.multiSelectCountChange = multiSelectCountChange;
 
-class ReactTitleBar extends React.Component {
-    state = {
-        isHelpOpen: false,
-    };
+function ReactTitleBar({
+    loadingOverlay,
+    loading,
+    title,
+    sidebarContent,
+    children,
+}) {
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [isHelpOpen, setHelpOpen] = useState(false);
 
-    self = this;
-
-    constructor(props) {
-        super(props);
-        self = this;
-        tbForceUpdate = this.doForceUpdate;
+    function openSidebar() {
+        setSidebarOpen(true);
     }
 
-    toggleIsHelpOpen(isNative = false) {
-        if (this.state.isHelpOpen) {
-            window.helpClose();
-        } else {
-            window.helpOpen(this.toggleIsHelpOpen.bind(this));
-        }
-        this.setState({ isHelpOpen: !this.state.isHelpOpen });
+    function closeSidebar() {
+        setSidebarOpen(false);
     }
 
-    printData() {
+    function openHelp() {
+        setHelpOpen(true);
+        window.helpOpen(closeHelp);
+    }
+
+    function closeHelp() {
+        setHelpOpen(false);
+        window.helpClose();
+    }
+
+    if (loadingOverlay) {
+        return (
+            <div className="vw-100 vh-100 d-flex justify-content-center align-items-center">
+                <i className="fa fa-circle-notch fa-spin fa-4x"></i>
+            </div>
+        );
+    }
+
+    function printData() {
         if (window.printData) {
             window.printData(); // this is probably simpletable's printData function
         }
     }
 
-    exportData() {
+    function exportData() {
         if (window.exportData) {
             window.exportData(); // this is probably simpletable's exportData function
         }
     }
 
-    doForceUpdate() {
-        self.forceUpdate();
-    }
-
-    multiSelectButtonCallback() {
+    function multiSelectButtonCallback() {
         if (window.multiSelectActionCallback) {
             window.multiSelectActionCallback();
         }
     }
 
-    render() {
-        return (
-            <MuiThemeProvider theme={theme}>
-                <MyAppBar>
-                    <Toolbar style={{ paddingRight: 20 }}>
-                        <Typography
-                            variant="h6"
-                            color="inherit"
-                            style={{ flexGrow: 1 }}
+    return (
+        <div className="container-fluid p-0">
+            <div className="no-gutters" style={{ minHeight: '100vh' }}>
+                {sidebarContent && sidebarOpen ? (
+                    <div className="col-2">
+                        <div
+                            className="border-right"
+                            style={{ height: '100vh', overflowY: 'scroll' }}
                         >
-                            {window.reportTitle}
-                        </Typography>
+                            <div className="navbar navbar-light bg-light p-2">
+                                <span className="navbar-brand">Dashboards</span>
+                                <button
+                                    className="btn btn-outline"
+                                    type="button"
+                                    onClick={closeSidebar}
+                                >
+                                    <i className="fa fa-chevron-left"></i>
+                                </button>
+                            </div>
+                            <div className="p-2">{sidebarContent}</div>
+                        </div>
+                    </div>
+                ) : null}
+                <div
+                    className={
+                        (sidebarContent && sidebarOpen ? 'col-10' : 'col-12') +
+                        ' d-flex flex-column'
+                    }
+                >
+                    <nav
+                        className="navbar navbar-dark bg-primary justify-content-start"
+                        style={{ height: '64px', flexWrap: 'unset' }}
+                    >
+                        {sidebarContent && !sidebarOpen ? (
+                            <button
+                                className="navbar-toggler mr-3"
+                                onClick={openSidebar}
+                                type="button"
+                                aria-expanded="false"
+                                aria-label="Toggle filters"
+                            >
+                                <i className="fa fa-bars"></i>
+                            </button>
+                        ) : null}
+                        <span
+                            className="navbar-brand"
+                            style={{ flex: 1, fontSize: '22px' }}
+                        >
+                            {window.reportTitle || ''}
+                        </span>
                         {window.multiSelect &&
                             window.multiSelectActionCallback && (
-                                <Button
-                                    variant="outlined"
-                                    onClick={this.multiSelectButtonCallback.bind(
-                                        this
-                                    )}
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-light"
+                                    style={{ marginLeft: 8, marginRight: 8 }}
+                                    onClick={multiSelectButtonCallback}
                                 >
-                                    {window.multiSelectButtonLabel}
-                                </Button>
+                                    {window.multiSelectButtonLabel ||
+                                        'Action here'}
+                                </button>
                             )}
-                        <Tooltip title="Print">
-                            <IconButton
-                                aria-label="Print"
-                                color="inherit"
-                                onClick={this.printData.bind(this)}
-                            >
-                                <Print />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Export to CSV">
-                            <IconButton
-                                aria-label="Export to CSV"
-                                color="inherit"
-                                onClick={this.exportData.bind(this)}
-                            >
-                                <GetAppIcon />
-                            </IconButton>
-                        </Tooltip>
-                        {!this.state.isHelpOpen ? (
-                            <Tooltip title="Help" id="helpButton">
-                                <IconButton
-                                    id="helpButton"
-                                    aria-label="Help"
-                                    color="inherit"
-                                    onClick={this.toggleIsHelpOpen.bind(
-                                        this,
-                                        true
-                                    )}
-                                >
-                                    <Help />
-                                </IconButton>
-                            </Tooltip>
-                        ) : (
-                            <Tooltip title="Close Help">
-                                <IconButton
-                                    id="helpButton"
-                                    aria-label="Close Help"
-                                    color="inherit"
-                                    onClick={this.toggleIsHelpOpen.bind(
-                                        this,
-                                        true
-                                    )}
-                                >
-                                    <Close />
-                                </IconButton>
-                            </Tooltip>
+                        <FontAwesomeIcon
+                            icon={faDownload}
+                            className="svg-shadow svg-icon-basic svg-icon-basic-hover"
+                            title="Export to CSV"
+                            onClick={exportData}
+                            //transform="shrink-6"
+                        />
+                        <FontAwesomeIcon
+                            icon={faPrint}
+                            className="svg-shadow svg-icon-basic svg-icon-basic-hover"
+                            title="Print"
+                            onClick={printData}
+                            //transform="shrink-6"
+                        />
+                        {window.helpOpen && isHelpOpen && (
+                            <FontAwesomeIcon
+                                icon={faTimes}
+                                className="svg-shadow svg-icon-basic svg-icon-basic-hover"
+                                style={{ zIndex: 50000 }} //display above any overlays
+                                title="Close Help"
+                                onClick={closeHelp}
+                            />
                         )}
-                    </Toolbar>
-                </MyAppBar>
-            </MuiThemeProvider>
-        );
-    }
+                        {window.helpOpen && !isHelpOpen && (
+                            <FontAwesomeIcon
+                                icon={faQuestion}
+                                title="Show Help"
+                                className="svg-shadow svg-icon-basic svg-icon-basic-hover"
+                                onClick={openHelp}
+                            />
+                        )}
+                    </nav>
+                    <main role="main" className="flex-grow-1">
+                        {loading ? (
+                            <Fragment>
+                                <div className="modal show fade d-flex justify-content-center align-items-center">
+                                    <i className="fa fa-circle-notch fa-spin fa-4x"></i>
+                                </div>
+                                <div className="modal-backdrop fade show"></div>
+                            </Fragment>
+                        ) : null}
+                        <div className="d-flex flex-column h-100 pt-3 pl-3 pr-3">
+                            {children}
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </div>
+    );
 }
 
+// class ReactTitleBarOld extends React.Component {
+//     state = {
+//         isHelpOpen: false,
+//     };
+
+//     self = this;
+
+//     constructor(props) {
+//         super(props);
+//         self = this;
+//         tbForceUpdate = this.doForceUpdate;
+//     }
+
+// toggleIsHelpOpen(isNative = false) {
+//     if (this.state.isHelpOpen) {
+//         window.helpClose();
+//     } else {
+//         window.helpOpen(this.toggleIsHelpOpen.bind(this));
+//     }
+//     this.setState({ isHelpOpen: !this.state.isHelpOpen });
+// }
+
+// printData() {
+//     if (window.printData) {
+//         window.printData(); // this is probably simpletable's printData function
+//     }
+// }
+
+// exportData() {
+//     if (window.exportData) {
+//         window.exportData(); // this is probably simpletable's exportData function
+//     }
+// }
+
+// doForceUpdate() {
+//     self.forceUpdate();
+// }
+
+// multiSelectButtonCallback() {
+//     if (window.multiSelectActionCallback) {
+//         window.multiSelectActionCallback();
+//     }
+// }
+
+//     render() {
+//         return (
+//             <MuiThemeProvider theme={theme}>
+//                 <MyAppBar>
+//                     <Toolbar style={{ paddingRight: 20 }}>
+//                         <Typography
+//                             variant="h6"
+//                             color="inherit"
+//                             style={{ flexGrow: 1 }}
+//                         >
+//                             {window.reportTitle}
+//                         </Typography>
+//                         {window.multiSelect &&
+//                             window.multiSelectActionCallback && (
+//                                 <Button
+//                                     variant="outlined"
+//                                     onClick={this.multiSelectButtonCallback.bind(
+//                                         this
+//                                     )}
+//                                 >
+//                                     {window.multiSelectButtonLabel}
+//                                 </Button>
+//                             )}
+//                         <Tooltip title="Print">
+//                             <IconButton
+//                                 aria-label="Print"
+//                                 color="inherit"
+//                                 onClick={this.printData.bind(this)}
+//                             >
+//                                 <Print />
+//                             </IconButton>
+//                         </Tooltip>
+//                         <Tooltip title="Export to CSV">
+//                             <IconButton
+//                                 aria-label="Export to CSV"
+//                                 color="inherit"
+//                                 onClick={this.exportData.bind(this)}
+//                             >
+//                                 <GetAppIcon />
+//                             </IconButton>
+//                         </Tooltip>
+//                         {!this.state.isHelpOpen ? (
+//                             <Tooltip title="Help" id="helpButton">
+//                                 <IconButton
+//                                     id="helpButton"
+//                                     aria-label="Help"
+//                                     color="inherit"
+//                                     onClick={this.toggleIsHelpOpen.bind(
+//                                         this,
+//                                         true
+//                                     )}
+//                                 >
+//                                     <Help />
+//                                 </IconButton>
+//                             </Tooltip>
+//                         ) : (
+//                             <Tooltip title="Close Help">
+//                                 <IconButton
+//                                     id="helpButton"
+//                                     aria-label="Close Help"
+//                                     color="inherit"
+//                                     onClick={this.toggleIsHelpOpen.bind(
+//                                         this,
+//                                         true
+//                                     )}
+//                                 >
+//                                     <Close />
+//                                 </IconButton>
+//                             </Tooltip>
+//                         )}
+//                     </Toolbar>
+//                 </MyAppBar>
+//             </MuiThemeProvider>
+//         );
+//     }
+// }
+
+var dashboardThis = null;
 class DashboardFramework extends React.Component {
     state = {
         isHelpOpen: false,
-        currentView:
-            '<i class="fa fa-truck fa-flip-horizontal"></i>&nbsp;Carriers',
+        currentView: '',
+        currentIcon: '',
+        currentLabel: '',
         drawerOpen: false,
-        menuList: [
-            {
-                label: 'Home',
-                icon: 'fa fa-home',
-                link: '../landingdashboard2.php',
-            },
-            {
-                label: 'Help',
-                icon: 'fa fa-question-circle',
-                link: '../help.php',
-            },
-            {
-                label: 'My System',
-                icon: '',
-                type: 'Heading',
-            },
-            {
-                label: 'My Frachise',
-                icon: 'fa fa-briefcase',
-                link:
-                    '../myfranchise.php?includecredits=1&excludedutiestaxes=0',
-            },
-            {
-                label: 'Charts',
-                icon: 'fa fa-bar-chart',
-                link: './../managementpack.php',
-            },
-            {
-                label: 'Follow-Ups',
-                icon: 'fa fa-calendar-check-o',
-                link: '../followups.php',
-            },
-            {
-                label: '$FRANCISE Detail',
-                icon: 'fa fa-list-alt',
-                link: '../../monthlymargin.php',
-            },
-            {
-                label: 'Shipments',
-                icon: '',
-                link: '',
-                type: 'Heading',
-            },
-            {
-                label: 'Webship',
-                iconAltText: 'WS',
-                iconAltTextStyle: {
-                    fontWeight: 'bold',
-                    border: '1px black solid',
-                },
-                link: '../webship.php',
-            },
-            {
-                label: 'WS Details',
-                icon: 'fa fa-list',
-                link: '../webship_details.php',
-            },
-            {
-                label: 'WS Pickups',
-                icon: 'fa fa-truck',
-                link: '../webship_pickups.php',
-            },
-            {
-                label: 'eCommerce',
-                icon: 'fa fa-shopping-cart',
-                link: '../ecommerce.php',
-            },
-            {
-                label: 'Integrations',
-                icon: 'fa fa-link',
-                link: '../ecintegrations.php',
-            },
-            {
-                label: 'BYO Shipments',
-                iconAltText: 'BYO',
-                iconAltTextStyle: {
-                    fontWeight: 'bold',
-                    border: '1px black solid',
-                },
-                link: '../byo.php',
-            },
-            {
-                label: 'Carriers',
-                icon: 'fa fa-truck fa-flip-horizontal',
-                link: '../carriers.php',
-            },
-            {
-                label: 'Services',
-                icon: 'fa fa-plane',
-                link: '../services.php?uspsonly=0',
-            },
-            {
-                label: 'Tracking',
-                new: true,
-                icon: 'fa fa-globe',
-                link: '../tracking.php',
-            },
-            {
-                label: 'Customer Tracking',
-                new: true,
-                icon: 'fa fa-map-marker',
-                link: '../trackingcustomer.php',
-            },
-            {
-                label: 'Sales',
-                icon: '',
-                link: '',
-                type: 'Heading',
-            },
-            {
-                label: 'Setups / Activations',
-                icon: 'fa fa-area-chart',
-                link: '../setups_and_activations.php?uspsonly=0',
-            },
-            {
-                label: 'Sales Reps',
-                iconAltText: 'SR',
-                iconAltTextStyle: {
-                    fontWeight: 'bold',
-                    border: '1px black solid',
-                },
-                link: '../sales_reps.php',
-            },
-            {
-                label: 'Sales Rep Detail',
-                icon: 'fa fa-list',
-                link: '../../monthlymargin.php?groupby=d_customer.salesrep',
-            },
-            {
-                label: 'Sales Forecast',
-                icon: 'fa fa-line-chart',
-                link: '../salesforecast.php',
-            },
-            {
-                // TODO: DO NOT SHOW FOR BGL, BG2, BGC!
-                label: 'Customer Onboarding',
-                icon: 'fa fa-handshake-o',
-                link: '../customeronboarding.php',
-            },
-            {
-                label: 'Retention',
-                icon: '',
-                type: 'Heading',
-            },
-            {
-                label: 'Overall',
-                iconAltText: 'O',
-                iconAltTextStyle: {
-                    padding: 2,
-                    fontWeight: 'bold',
-                    border: '1px black solid',
-                },
-                link: '../../retention/retention.html',
-            },
-            {
-                label: 'Monthly',
-                iconAltText: ' M ',
-                iconAltTextStyle: {
-                    padding: 2,
-                    fontWeight: 'bold',
-                    border: '1px black solid',
-                },
-                link: '../../retention/retention.html',
-            },
-            {
-                label: 'Quarterly',
-                iconAltText: ' Q ',
-                iconAltTextStyle: {
-                    padding: 2,
-                    fontWeight: 'bold',
-                    border: '1px black solid',
-                },
-                link: '../../retention/franchisequarterly.php',
-            },
-            {
-                label: 'Yearly',
-                iconAltText: ' Y ',
-                iconAltTextStyle: {
-                    padding: 2,
-                    fontWeight: 'bold',
-                    border: '1px black solid',
-                },
-                link: '../../retention/franchiseyearly.html',
-            },
-            {
-                label: 'Customer',
-                iconAltText: ' C ',
-                iconAltTextStyle: {
-                    padding: 2,
-                    fontWeight: 'bold',
-                    border: '1px black solid',
-                },
-                link: '../../retention/customer.php',
-            },
-            {
-                label: 'Receivables',
-                icon: '',
-                type: 'Heading',
-            },
-            {
-                label: 'Invoices',
-                icon: 'fa fa-file-text',
-                link: '../invoices.php',
-            },
-            {
-                // NOT BGL, BG2, BGC
-                label: 'Uninvoiced Shipments',
-                icon: 'fa fa-file-text-o',
-                link: '../uninvoicedshipments.php',
-            },
-        ],
+        loading: false,
     };
 
     constructor(props) {
         super(props);
+        dashboardThis = this;
+    }
+
+    componentDidMount() {
+        this.initialLoad();
     }
 
     handleDrawerOpen = () => {
@@ -460,268 +448,634 @@ class DashboardFramework extends React.Component {
         }
     }
 
-    onDashboardMenuSelect(event, item) {
-        var currentItem = '';
-        if (typeof item.icon != 'undefined' && item.icon != '') {
-            currentItem = '<i class="' + item.icon + '"><i>';
+    openHelp() {
+        this.setState({ isHelpOpen: true });
+        if (window.helpOpen) {
+            window.helpOpen(this.outsideCloseHelp);
         }
-        currentItem += '<i>&nbsp;' + item.label + '</i>';
-        this.setState({ currentView: currentItem });
+    }
+
+    outsideCloseHelp() {
+        dashboardThis.setState({ isHelpOpen: false });
+        dashboardThis.forceUpdate();
+    }
+
+    closeHelp() {
+        this.setState({ isHelpOpen: false });
+        if (window.helpClose) {
+            window.helpClose();
+        }
+    }
+
+    componentDidUpdate(prevProps) {
+
+    }
+
+    onDashboardMenuSelect(event, item) {
+        var currentIcon = '';
+        var currentLabel = '';
+        if (typeof item.icon != 'undefined' && item.icon != '') {
+            currentIcon = '<i class="' + item.icon + '"></i>';
+        }
+        currentLabel = item.label;
+        this.setState(
+            {
+                currentView: item.link,
+                currentIcon: currentIcon,
+                currentLabel: currentLabel,
+                drawerOpen: false,
+            },
+            () => {
+                console.log('onDashboardMenuSelect!', this.state);
+            }
+        );
+    }
+
+    multiSelectButtonCallback() {
+        if (window.multiSelectActionCallback) {
+            window.multiSelectActionCallback();
+        }
+    }
+
+    initialLoad() {
+        var parsedMenu = json5.parse(this.props.menuList);
+        if (this.state.currentView == '') {
+            // set up the current selection
+            for (var i = 0; i < parsedMenu.length; i++) {
+                var item = parsedMenu[i];
+                console.log("comparing #" + item + " to " + window.location.hash);
+                if('#' + item.link == window.location.hash) {
+                    console.log("FOUND");
+                    this.setState({ currentIcon: '<i class="' + item.icon + '"></i>', currentLabel: item.label });
+                }
+            }
+        }
     }
 
     render() {
+        var parsedMenu = [];
+        if (typeof this.props.menuList != 'undefined') {
+            parsedMenu = json5.parse(this.props.menuList);
+        }
         return (
-            <MuiThemeProvider theme={theme}>
-                <div style={{ width: '100%', height: '100%' }}>
-                    <MyAppBar
-                        position="fixed"
+            <div style={{ display: 'table', width: '100%' }}>
+                {this.state.drawerOpen ? (
+                    <div
                         style={{
-                            paddingLeft: 0,
-                            width: `calc(100% - ${
-                                this.state.drawerOpen ? drawerWidth : 0
-                            }px)`,
-                            marginLeft: this.state.drawerOpen ? 260 : 0,
-                            paddingLeft: 8,
-                        }}
-                    >
-                        <Toolbar style={{ paddingRight: 20, paddingLeft: 0 }}>
-                            <IconButton
-                                aria-label="open drawer"
-                                onClick={this.handleDrawerOpen}
-                                style={{
-                                    marginLeft: 12,
-                                    marginRight: 20,
-                                    display: this.state.drawerOpen
-                                        ? 'none'
-                                        : 'block',
-                                }}
-                            >
-                                <MenuIcon style={{ color: 'white' }} />
-                            </IconButton>
-                            <table style={{ flex: 1 }}>
-                                <tr>
-                                    <td>
-                                        <Typography
-                                            variant="h6"
-                                            color="inherit"
-                                            style={{
-                                                whiteSpace: 'nowrap',
-                                                display: this.state.drawerOpen
-                                                    ? 'none'
-                                                    : 'block',
-                                                flexGrow: 5,
-                                                paddingLeft: 16,
-                                                fontFamily: 'fantasy, freesans',
-                                            }}
-                                        >
-                                            shipping
-                                            CENTRAL&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;
-                                        </Typography>
-                                    </td>
-                                    <td>
-                                        <Typography
-                                            variant="h6"
-                                            color="inherit"
-                                            style={{
-                                                fontFamily:
-                                                    'Roboto, Tahoma, Helvetica',
-                                                fontSize: 24,
-                                                whiteSpace: 'nowrap',
-                                                paddingLeft: this.state
-                                                    .drawerOpen
-                                                    ? 16
-                                                    : 0,
-                                            }}
-                                            dangerouslySetInnerHTML={{
-                                                __html: this.state.currentView,
-                                            }}
-                                        ></Typography>
-                                    </td>
-                                    <td style={{ width: '100%' }}>&nbsp;</td>
-                                </tr>
-                            </table>
-                            {/* <Tooltip title="Print">
-                            <IconButton
-                                aria-label="Print"
-                                color="inherit"
-                                onClick={ this.printData.bind(this) }
-                            >
-                                <Print />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Export to CSV">
-                            <IconButton
-                                aria-label="Export to CSV"
-                                color="inherit"
-                                onClick={ this.exportData.bind(this) }
-                            >
-                                <GetAppIcon />
-                            </IconButton>
-                        </Tooltip> */}
-                            {!this.state.isHelpOpen ? (
-                                <Tooltip title="Help" id="helpButton">
-                                    <IconButton
-                                        id="helpButton"
-                                        aria-label="Help"
-                                        color="inherit"
-                                        onClick={this.toggleIsHelpOpen.bind(
-                                            this,
-                                            true
-                                        )}
-                                    >
-                                        <Help />
-                                    </IconButton>
-                                </Tooltip>
-                            ) : (
-                                <Tooltip title="Close Help">
-                                    <IconButton
-                                        id="helpButton"
-                                        aria-label="Close Help"
-                                        color="inherit"
-                                        onClick={this.toggleIsHelpOpen.bind(
-                                            this,
-                                            true
-                                        )}
-                                    >
-                                        <Close />
-                                    </IconButton>
-                                </Tooltip>
-                            )}
-                        </Toolbar>
-                    </MyAppBar>
-                    <Drawer
-                        variant="persistent"
-                        anchor="left"
-                        open={this.state.drawerOpen}
-                        style={{
-                            width: this.state.drawerOpen ? 260 : 0,
-                            flexShrink: 0,
-                            zIndex: 5050,
-                            overflowX: 'hidden',
+                            display: 'table-cell',
+                            width: '260px',
+                            overflowY: 'scroll',
                         }}
                     >
                         <div
-                            style={{
-                                overflowX: 'hidden',
-                                height: 64,
-                                minHeight: 64,
-                                display: 'flex',
-                                alignItems: 'center',
-                                padding: '16 8px',
-                                justifyContent: 'flex-end',
-                                width: '260px',
-                            }}
+                            className="border-right"
+                            style={{ height: '100vh', overflowY: 'scroll' }}
                         >
-                            <i
-                                style={{
-                                    width: '100%',
-                                    position: 'absolute',
-                                    color: '#888888',
-                                    fontSize: 18,
-                                    fontFamily: 'fantasy, freesans',
-                                    marginLeft: 16,
-                                }}
-                            >
-                                shipping<br></br>CENTRAL
-                            </i>
-                            <IconButton onClick={this.handleDrawerClose}>
-                                {this.state.drawerOpen ? (
-                                    <ChevronLeftIcon />
-                                ) : (
-                                    <ChevronRightIcon />
-                                )}
-                            </IconButton>
-                        </div>
-                        <Divider />
-                        <List style={{ paddingTop: 0 }}>
-                            {this.state.menuList.map((item, key) => {
-                                item.type =
-                                    typeof item.type == 'undefined'
-                                        ? ''
-                                        : item.type;
-                                return (
-                                    <ListItem
-                                        id={item.i}
-                                        key={item.i}
+                            <div className="navbar navbar-light bg-light p-2">
+                                <div
+                                    style={{
+                                        paddingBottom: 20,
+                                        width: '100%',
+                                        display: 'flex',
+                                        flexWrap: 'unset',
+                                    }}
+                                >
+                                    <i
                                         style={{
-                                            cursor: 'pointer',
-                                            paddingTop: 2,
-                                            paddingBottom: 2,
+                                            color: '#888888',
+                                            fontSize: 20,
+                                            fontFamily: 'fantasy, freesans',
+                                            fontStyle: 'italic',
+                                            marginLeft: 16,
+                                            flex: 1,
                                         }}
-                                        data-dashboard={item.link}
-                                        onClick={(event) =>
-                                            this.onDashboardMenuSelect(
-                                                event,
-                                                item
-                                            )
-                                        }
-                                        className={
-                                            item.type == 'Heading'
-                                                ? 'heading'
-                                                : 'menuitem'
-                                        }
                                     >
-                                        {item.type != 'Heading' && item.icon && (
-                                            <div style={{ width: 36 }}>
-                                                <i
-                                                    style={{ fontSize: 20 }}
-                                                    className={item.icon}
-                                                ></i>
-                                            </div>
-                                        )}
-                                        {item.iconAltText && (
-                                            <div style={{ width: 36 }}>
-                                                <i
-                                                    style={{
-                                                        width: 36,
-                                                        ...item.iconAltTextStyle,
-                                                    }}
-                                                >
-                                                    {item.iconAltText}
-                                                </i>
-                                            </div>
-                                        )}
-                                        {item.type == 'Heading' ? (
-                                            <ListSubheader
+                                        {window.reportTitle || ''}
+                                    </i>
+                                    <button
+                                        className="btn"
+                                        style={{ color: 'white' }}
+                                        type="button"
+                                        onClick={this.handleDrawerClose}
+                                    >
+                                        <i className="fa fa-chevron-left"></i>
+                                    </button>
+                                </div>
+                                <ul
+                                    className="dashboard-menu-group"
+                                    style={{ paddingTop: 0, width: '100%' }}
+                                >
+                                    {parsedMenu.map((item, i) => {
+                                        item.type =
+                                            typeof item.type == 'undefined'
+                                                ? ''
+                                                : item.type;
+                                        return (
+                                            <li
+                                                className={
+                                                    'dashboard-menu-group-item' +
+                                                    ((this.state.currentView ==
+                                                        '' &&
+                                                        i == 0) ||
+                                                    (this.state.currentView ==
+                                                        item.link && item.link)
+                                                        ? ' active'
+                                                        : '')
+                                                }
+                                                id={i}
+                                                key={i}
                                                 style={{
-                                                    height: 40,
-                                                    paddingTop: 2,
-                                                    paddingBottom: 2,
+                                                    cursor: 'pointer',
+                                                    ...item.menuItemStyle
                                                 }}
+                                                data-dashboard={item.link}
+                                                onClick={(event) =>
+                                                    this.onDashboardMenuSelect(
+                                                        event,
+                                                        item
+                                                    )
+                                                }
                                             >
-                                                {item.label}
-                                            </ListSubheader>
-                                        ) : (
-                                            <ListItemText
-                                                style={{
-                                                    fontSize: 10,
-                                                    fontWeight:
-                                                        item.type == 'Heading'
-                                                            ? 'bold'
-                                                            : 'normal',
-                                                }}
-                                                primary={item.label}
-                                            />
-                                        )}
-                                    </ListItem>
-                                );
-                            })}
-                        </List>
-                    </Drawer>
+                                                {item.iconAltText && (
+                                                    <span
+                                                        style={{
+                                                            minWidth: 26,
+                                                            maxWidth: 26,
+                                                            width: 26,
+                                                            marginRight: 5,
+                                                            marginLeft: 5,
+                                                            display:
+                                                                'inline-block',
+                                                            textAlign: 'center',
+                                                        }}
+                                                    >
+                                                        <i
+                                                            style={{
+                                                                width: 26,
+                                                                minWidth: 26,
+                                                                fontSize:
+                                                                    '.6vw',
+                                                                padding: 1,
+                                                                ...item.iconAltTextStyle,
+                                                            }}
+                                                        >
+                                                            {item.iconAltText}
+                                                        </i>
+                                                    </span>
+                                                )}
+                                                {item.type == 'Heading' ? (
+                                                    <b>{item.label}</b>
+                                                ) : (
+                                                    <Fragment>
+                                                        {item.icon && (
+                                                            <i
+                                                                className={
+                                                                    item.icon
+                                                                }
+                                                                style={{
+                                                                    padding:
+                                                                        '10px',
+                                                                    width: '36',
+                                                                    ...item.iconStyle
+                                                                }}
+                                                            ></i>
+                                                        )}
+                                                        {item.label}
+                                                    </Fragment>
+                                                )}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
+                <div style={{ minHeight: '100vh' }}>
+                    <nav className="navbar navbar-dark bg-primary justify-content-start">
+                        {!this.state.drawerOpen ? (
+                            <button
+                                className="navbar-toggler mr-3"
+                                onClick={this.handleDrawerOpen}
+                                type="button"
+                                aria-expanded="false"
+                                aria-label="Show Menu"
+                            >
+                                <FontAwesomeIcon
+                                    icon={faBars}
+                                    className="svg-shadow svg-icon-basic-nomargin"
+                                    title="Show Menu"
+                                    //transform="shrink-6"
+                                />
+                            </button>
+                        ) : null}
+                        <span
+                            className="navbar-brand"
+                            style={{ flex: 1, fontSize: '22px' }}
+                            dangerouslySetInnerHTML={{
+                                __html:
+                                    (this.state.drawerOpen
+                                        ? ''
+                                        : '<i style="color: white; font-size: 22px; font-family: fantasy, freesans; font-style: italic; marginLeft: 16px; flex: 1;">' +
+                                          '' +
+                                          window.reportTitle +
+                                          '</i>' +
+                                          '&nbsp;&nbsp;-&nbsp;&nbsp;') +
+                                    this.state.currentIcon +
+                                    ' ' +
+                                    this.state.currentLabel + '&nbsp;',
+                            }}
+                        ></span>
+                        {window.multiSelect &&
+                            window.multiSelectActionCallback && (
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-light"
+                                    style={{ marginLeft: 8, marginRight: 8 }}
+                                    onClick={multiSelectButtonCallback}
+                                >
+                                    {window.multiSelectButtonLabel ||
+                                        'Action here'}
+                                </button>
+                            )}
+                        {!window.disableCSVTitleBarButton && (
+                            <FontAwesomeIcon
+                                icon={faDownload}
+                                className="svg-shadow svg-icon-basic svg-icon-basic-hover"
+                                title="Export to CSV"
+                                onClick={this.exportData.bind(this)}
+                                //transform="shrink-6"
+                            />
+                        )}
+                        {!window.disablePrintTitleBarButton && (
+                            <FontAwesomeIcon
+                                icon={faPrint}
+                                className="svg-shadow svg-icon-basic svg-icon-basic-hover"
+                                title="Print"
+                                onClick={this.printData.bind(this)}
+                                //transform="shrink-6"
+                            />
+                        )}
+                        <div
+                            id="helpButton"
+                            style={{
+                                position: 'relative',
+                                left: 16,
+                                zIndex: 49999,
+                            }}
+                        />
+                        {window.helpOpen && this.state.isHelpOpen && (
+                            <FontAwesomeIcon
+                                icon={faTimes}
+                                className="svg-shadow svg-icon-basic svg-icon-basic-hover"
+                                style={{ zIndex: 50000 }} //display above any overlays
+                                title="Close Help"
+                                onClick={this.closeHelp.bind(this)}
+                            />
+                        )}
+                        {window.helpOpen && !this.state.isHelpOpen && (
+                            <FontAwesomeIcon
+                                icon={faQuestion}
+                                title="Show Help"
+                                className="svg-shadow svg-icon-basic svg-icon-basic-hover"
+                                onClick={this.openHelp.bind(this)}
+                            />
+                        )}
+                    </nav>
                     <main
+                        role="main"
                         style={{
-                            height: '100%',
-                            marginLeft: this.state.drawerOpen ? 270 : 0,
+                            height: '100vh',
                         }}
                     >
-                        <div style={{ width: '100%', height: 64 }}></div>
+                        {this.state.loading ? (
+                            <Fragment>
+                                <div className="modal show fade d-flex justify-content-center align-items-center">
+                                    <i className="fa fa-circle-notch fa-spin fa-4x"></i>
+                                </div>
+                                <div className="modal-backdrop fade show"></div>
+                            </Fragment>
+                        ) : null}
                         <div id="leo-dashboard"></div>
                     </main>
                 </div>
-            </MuiThemeProvider>
+            </div>
         );
     }
 }
+
+// class DashboardFrameworkOld extends React.Component {
+//     state = {
+//         isHelpOpen: false,
+//         currentView:
+//             '<i class="fa fa-truck fa-flip-horizontal"></i>&nbsp;Carriers',
+//         drawerOpen: false,
+//     };
+
+//     constructor(props) {
+//         super(props);
+//     }
+
+//     handleDrawerOpen = () => {
+//         this.setState({ drawerOpen: true, hideTooltip: false });
+//     };
+
+//     handleDrawerClose = () => {
+//         this.setState({
+//             drawerOpen: false,
+//         });
+//         // window.setTimeout(this.doHideTooltip, 5000);
+//     };
+
+//     toggleIsHelpOpen(isNative = false) {
+//         if (this.state.isHelpOpen) {
+//             window.helpClose();
+//         } else {
+//             window.helpOpen(this.toggleIsHelpOpen.bind(this));
+//         }
+//         this.setState({ isHelpOpen: !this.state.isHelpOpen });
+//     }
+
+//     printData() {
+//         if (window.printData) {
+//             window.printData(); // this is probably simpletable's printData function
+//         }
+//     }
+
+//     exportData() {
+//         if (window.exportData) {
+//             window.exportData(); // this is probably simpletable's exportData function
+//         }
+//     }
+
+//     onDashboardMenuSelect(event, item) {
+//         var currentItem = '';
+//         if (typeof item.icon != 'undefined' && item.icon != '') {
+//             currentItem = '<i class="' + item.icon + '"><i>';
+//         }
+//         currentItem += '<i>&nbsp;' + item.label + '</i>';
+//         this.setState({ currentView: currentItem });
+//     }
+
+//     render() {
+//         var parsedMenu = [];
+//         if (typeof this.props.menuList != 'undefined') {
+//             parsedMenu = json5.parse(this.props.menuList);
+//         }
+//         return (
+//             <MuiThemeProvider theme={theme}>
+//                 <div style={{ width: '100%', height: '100%' }}>
+//                     <MyAppBar
+//                         position="fixed"
+//                         style={{
+//                             paddingLeft: 0,
+//                             width: `calc(100% - ${
+//                                 this.state.drawerOpen ? drawerWidth : 0
+//                             }px)`,
+//                             marginLeft: this.state.drawerOpen ? 260 : 0,
+//                             paddingLeft: 8,
+//                         }}
+//                     >
+//                         <Toolbar style={{ paddingRight: 20, paddingLeft: 0 }}>
+//                             <IconButton
+//                                 aria-label="open drawer"
+//                                 onClick={this.handleDrawerOpen}
+//                                 style={{
+//                                     marginLeft: 12,
+//                                     marginRight: 20,
+//                                     display: this.state.drawerOpen
+//                                         ? 'none'
+//                                         : 'block',
+//                                 }}
+//                             >
+//                                 <MenuIcon style={{ color: 'white' }} />
+//                             </IconButton>
+//                             <table style={{ flex: 1 }}>
+//                                 <tr>
+//                                     <td>
+//                                         <Typography
+//                                             variant="h6"
+//                                             color="inherit"
+//                                             style={{
+//                                                 whiteSpace: 'nowrap',
+//                                                 display: this.state.drawerOpen
+//                                                     ? 'none'
+//                                                     : 'block',
+//                                                 flexGrow: 5,
+//                                                 paddingLeft: 16,
+//                                                 fontFamily: 'fantasy, freesans',
+//                                             }}
+//                                         >
+//                                             shipping
+//                                             CENTRAL&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;
+//                                         </Typography>
+//                                     </td>
+//                                     <td>
+//                                         <Typography
+//                                             variant="h6"
+//                                             color="inherit"
+//                                             style={{
+//                                                 fontFamily:
+//                                                     'Roboto, Tahoma, Helvetica',
+//                                                 fontSize: 24,
+//                                                 whiteSpace: 'nowrap',
+//                                                 paddingLeft: this.state
+//                                                     .drawerOpen
+//                                                     ? 16
+//                                                     : 0,
+//                                             }}
+//                                             dangerouslySetInnerHTML={{
+//                                                 __html: this.state.currentView,
+//                                             }}
+//                                         ></Typography>
+//                                     </td>
+//                                     <td style={{ width: '100%' }}>&nbsp;</td>
+//                                 </tr>
+//                             </table>
+//                             {/* <Tooltip title="Print">
+//                             <IconButton
+//                                 aria-label="Print"
+//                                 color="inherit"
+//                                 onClick={ this.printData.bind(this) }
+//                             >
+//                                 <Print />
+//                             </IconButton>
+//                         </Tooltip>
+//                         <Tooltip title="Export to CSV">
+//                             <IconButton
+//                                 aria-label="Export to CSV"
+//                                 color="inherit"
+//                                 onClick={ this.exportData.bind(this) }
+//                             >
+//                                 <GetAppIcon />
+//                             </IconButton>
+//                         </Tooltip> */}
+//                             {!this.state.isHelpOpen ? (
+//                                 <Tooltip title="Help" id="helpButton">
+//                                     <IconButton
+//                                         id="helpButton"
+//                                         aria-label="Help"
+//                                         color="inherit"
+//                                         onClick={this.toggleIsHelpOpen.bind(
+//                                             this,
+//                                             true
+//                                         )}
+//                                     >
+//                                         <Help />
+//                                     </IconButton>
+//                                 </Tooltip>
+//                             ) : (
+//                                 <Tooltip title="Close Help">
+//                                     <IconButton
+//                                         id="helpButton"
+//                                         aria-label="Close Help"
+//                                         color="inherit"
+//                                         onClick={this.toggleIsHelpOpen.bind(
+//                                             this,
+//                                             true
+//                                         )}
+//                                     >
+//                                         <Close />
+//                                     </IconButton>
+//                                 </Tooltip>
+//                             )}
+//                         </Toolbar>
+//                     </MyAppBar>
+//                     <Drawer
+//                         variant="persistent"
+//                         anchor="left"
+//                         open={this.state.drawerOpen}
+//                         style={{
+//                             width: this.state.drawerOpen ? 260 : 0,
+//                             flexShrink: 0,
+//                             zIndex: 5050,
+//                             overflowX: 'hidden',
+//                         }}
+//                     >
+//                         <div
+//                             style={{
+//                                 overflowX: 'hidden',
+//                                 height: 64,
+//                                 minHeight: 64,
+//                                 display: 'flex',
+//                                 alignItems: 'center',
+//                                 padding: '16 8px',
+//                                 justifyContent: 'flex-end',
+//                                 width: '260px',
+//                             }}
+//                         >
+//                             <i
+//                                 style={{
+//                                     width: '100%',
+//                                     position: 'absolute',
+//                                     color: '#888888',
+//                                     fontSize: 18,
+//                                     fontFamily: 'fantasy, freesans',
+//                                     marginLeft: 16,
+//                                 }}
+//                             >
+//                                 shipping<br></br>CENTRAL
+//                             </i>
+//                             <IconButton onClick={this.handleDrawerClose}>
+//                                 {this.state.drawerOpen ? (
+//                                     <ChevronLeftIcon />
+//                                 ) : (
+//                                     <ChevronRightIcon />
+//                                 )}
+//                             </IconButton>
+//                         </div>
+//                         <Divider />
+//                         <List style={{ paddingTop: 0 }}>
+//                             {parsedMenu.map((item, key) => {
+//                                 item.type =
+//                                     typeof item.type == 'undefined'
+//                                         ? ''
+//                                         : item.type;
+//                                 return (
+//                                     <ListItem
+//                                         id={item.i}
+//                                         key={item.i}
+//                                         style={{
+//                                             cursor: 'pointer',
+//                                             paddingTop: 2,
+//                                             paddingBottom: 2,
+//                                         }}
+//                                         data-dashboard={item.link}
+//                                         onClick={(event) =>
+//                                             this.onDashboardMenuSelect(
+//                                                 event,
+//                                                 item
+//                                             )
+//                                         }
+//                                         className={
+//                                             item.type == 'Heading'
+//                                                 ? 'heading'
+//                                                 : 'menuitem'
+//                                         }
+//                                     >
+//                                         {item.type != 'Heading' && item.icon && (
+//                                             <div style={{ width: 36 }}>
+//                                                 <i
+//                                                     style={{
+//                                                         fontSize: 20,
+//                                                     }}
+//                                                     className={item.icon}
+//                                                 ></i>
+//                                             </div>
+//                                         )}
+//                                         {item.iconAltText && (
+//                                             <div style={{ width: 36 }}>
+//                                                 <i
+//                                                     style={{
+//                                                         width: 36,
+//                                                         ...item.iconAltTextStyle,
+//                                                     }}
+//                                                 >
+//                                                     {item.iconAltText}
+//                                                 </i>
+//                                             </div>
+//                                         )}
+//                                         {item.type == 'Heading' ? (
+//                                             <ListSubheader
+//                                                 style={{
+//                                                     height: 40,
+//                                                     paddingTop: 2,
+//                                                     paddingBottom: 2,
+//                                                 }}
+//                                             >
+//                                                 {item.label}
+//                                             </ListSubheader>
+//                                         ) : (
+//                                             <ListItemText
+//                                                 style={{
+//                                                     fontSize: 10,
+//                                                     fontWeight:
+//                                                         item.type == 'Heading'
+//                                                             ? 'bold'
+//                                                             : 'normal',
+//                                                 }}
+//                                                 primary={item.label}
+//                                             />
+//                                         )}
+//                                     </ListItem>
+//                                 );
+//                             })}
+//                         </List>
+//                     </Drawer>
+//                     <main
+//                         style={{
+//                             height: '100%',
+//                             marginLeft: this.state.drawerOpen ? 270 : 0,
+//                         }}
+//                     >
+//                         <div style={{ width: '100%', height: 64 }}></div>
+//                         <div id="leo-dashboard"></div>
+//                     </main>
+//                 </div>
+//             </MuiThemeProvider>
+//         );
+//     }
+// }
 
 var LEO = require('./lib/leo.js');
 var self = (module.exports = $.extend({}, LEO, {
@@ -731,6 +1085,14 @@ var self = (module.exports = $.extend({}, LEO, {
             api.setEndpoint(opts.apiEndpoint);
             window.apiEndpoint = opts.apiEndpoint;
             window.apiKey = undefined;
+            window.disableCSVTitleBarButton =
+                typeof opts.disableCSVTitleBarButton != 'undefined'
+                    ? opts.disableCSVTitleBarButton
+                    : false;
+            window.disablePrintTitleBarButton =
+                typeof opts.disablePrintTitleBarButton != 'undefined'
+                    ? opts.disablePrintTitleBarButton
+                    : false;
             window.reportTitle =
                 opts.reportTitle || "set LEO.init({ reportTitle: 'Title!' })!";
             window.helpOpen = opts.helpOpen || function () {};
@@ -782,12 +1144,14 @@ var self = (module.exports = $.extend({}, LEO, {
         }
 
         console.log('element.find(leo-dashboard-framework)');
-        if (element.find('#leo-dashboard-framework').length > 0) {
+        element.find('#leo-dashboard-framework').each(function (i, dashboard) {
+            var menuList = dashboard.innerHTML;
+            menuList = $(menuList).text(); // remove <script ...> </script> tags around menus
             ReactDom.render(
-                <DashboardFramework id="reacttb" />,
-                document.getElementById('leo-dashboard-framework')
+                <DashboardFramework id="reacttb" menuList={menuList} />,
+                dashboard
             );
-        }
+        });
 
         element.find('.leo-filters').each(function (i, filterSection) {
             var leoGroup = $(filterSection).data('leo-group');
@@ -818,7 +1182,7 @@ var self = (module.exports = $.extend({}, LEO, {
                     var api = $(f).data('api');
                     var isRequired = $(f).data('required') || false;
                     var singleValue = $(f).data('single-value') || false;
-                    var comparison = $(f).data('comparison') || 'in';
+                var comparison = $(f).data('comparison') || 'in';
 
                     if (filter.find('select').length) {
                         checkboxes = {};
@@ -1252,7 +1616,12 @@ var self = (module.exports = $.extend({}, LEO, {
 function doStart() {
     window.Highcharts = Highcharts;
 
-    $('#leo-dashboard').show();
+    window.setTimeout(
+        () => {
+            $('#leo-dashboard').show();
+        },
+        $('#leo-dashboard').length == 0 ? 500 : 0
+    );
 
     /*
 	// close on mouse out

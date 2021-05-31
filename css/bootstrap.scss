@@ -1,0 +1,89 @@
+$fa-font-path: '/html/static/fonts';
+//@import '../node_modules/@fortawesome/fontawesome-free/scss/fontawesome.scss';
+//@import '../node_modules/@fortawesome/fontawesome-free/scss/_variables.scss';
+//@import '../node_modules/@fortawesome/fontawesome-free/scss/_mixins.scss';
+//@import '../node_modules/@fortawesome/fontawesome-free/scss/_path.scss';
+//@import '../node_modules/@fortawesome/fontawesome-free/scss/_core.scss';
+//@import '../node_modules/@fortawesome/fontawesome-free/scss/_icons.scss';
+//@import '../node_modules/@fortawesome/fontawesome-free/scss/_larger.scss';
+//@import '../node_modules/@fortawesome/fontawesome-free/scss/_animated.scss';
+
+//_animated.scss         _fixed-width.scss  _list.scss             _screen-reader.scss  _variables.scss   regular.scss
+//_bordered-pulled.scss  _icons.scss        _mixins.scss           _shims.scss          brands.scss       solid.scss
+//_core.scss             _larger.scss       _rotated-flipped.scss  _stacked.scss        fontawesome.scss  v4-shims.scss
+
+//@import '../node_modules/bootstrap/scss/bootstrap.scss';
+//@import '../node_modules/mdbootstrap/scss/mdb-free.scss';
+
+// copied from jssrc/rems/scss/bootstrap.scss: 
+
+// Use this file to customize Bootstrap 4 for REMS
+// For more info on theming Bootstrap 4, see https://getbootstrap.com/docs/4.0/getting-started/theming/
+
+$theme-colors: (
+    "primary": #0067b4,
+    "secondary": #e6e6e6
+);
+
+// import bootstrap last
+@import "../node_modules/bootstrap/scss/bootstrap";
+/*
+            .fa-stack {
+            position: relative;
+            display: inline-block;
+            width: 2em;
+            height: 2em;
+            line-height: 2em;
+            vertical-align: middle;
+            }
+            .fa-stack-1x,
+            .fa-stack-2x,
+            .fa-stack-3x,
+            .fa-stack-4x {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            }
+            .fa-stack-1x {
+            line-height: inherit;
+            }
+            .fa-stack-2x {
+            font-size: 2em;
+            }
+            .fa-stack-3x {
+            font-size: 3em;
+            }
+            .fa-stack-4x {
+            font-size: 4em;
+            }
+*/
+
+.svg-shadow {
+  -webkit-filter: drop-shadow( 1px 1px 1px rgba(0, 0, 0, .7));
+  filter: drop-shadow( 1px 1px 1px rgba(0, 0, 0, .7));
+  /* Similar syntax to box-shadow */
+}
+
+.svg-icon-basic {
+	color: white;
+	font-size: 22px;
+	width: 22px;
+	height: 22px;
+	cursor: pointer;
+	margin-left: 15px;
+	margin-right: 15px;
+}
+.svg-icon-basic-nomargin {
+	color: white;
+	font-size: 22px;
+	width: 22px;
+	height: 22px;
+	cursor: pointer;
+}
+svg.svg-shadow.svg-icon-basic-hover:hover {
+    width: 32px;
+    height: 32px;
+    margin-left: 10px;
+    margin-right: 10px;
+}

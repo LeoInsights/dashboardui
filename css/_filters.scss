@@ -1,12 +1,12 @@
 /* tool bar *
 	#tool-bar {
 		height: 50px;
-		background: @babyblue;
+		background: $babyblue;
 		color: #444444;
 
 		/*
 		& > * {
-			height:calc(~"100% - 15px"); /* ??? *
+			height:calc(#{"100% - 15px"}); /* ??? *
 		}
 		*
 
@@ -234,7 +234,7 @@
     .range-presets {
         .preset-list {
             max-height: 450px;
-            max-height: calc(~'100vh - 540px');
+            max-height: calc('100vh - 540px');
             overflow: auto;
         }
 

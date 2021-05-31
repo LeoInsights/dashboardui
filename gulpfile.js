@@ -1,4 +1,4 @@
-var gulp = require("gulp");
+var gulp = require('gulp');
 var browserify = require('browserify');
 var babelify = require('babelify');
 var watchify = require('watchify');
@@ -9,73 +9,129 @@ var rename = require('gulp-rename');
 var replace = require('gulp-replace');
 var concat = require('gulp-concat');
 
-var less = require('gulp-less');
+//var less = require('gulp-less');
+var sass = require('gulp-sass');
 
-var util = require("util");
+var util = require('util');
 var AWS = require('aws-sdk');
-var fs = require("fs");
+var fs = require('fs');
 
-var liveVersion = ".1.10.34.";
-var devVersion = ".1.10.";
-var cdn = "..";
-var version = ".";
+var liveVersion = '.1.10.34.';
+var devVersion = '.1.10.';
+var cdn = '..';
+var version = '.';
 
 AWS.config.update({
-	region: 'us-west-2',
-	accessKeyId: '???????????????????',
-	secretAccessKey: '????????????????????'
+    region: 'us-west-2',
+    accessKeyId: '???????????????????',
+    secretAccessKey: '????????????????????',
 });
 
-gulp.task('less', function() {
-	return gulp.src(['./css/LeoOEM.less'])
-		.pipe(replace(/__VERSION__/g, version))
-		.pipe(less().on('error', gutil.log))
-		.pipe(concat('leo-oem.css'))
-		.pipe(gulp.dest('./dist/'));
+gulp.task('sass', function () {
+    return gulp
+        .src(['./css/LeoOEM.scss'])
+        .pipe(replace(/__VERSION__/g, version))
+        .pipe(sass().on('error', gutil.log))
+        .pipe(concat('leo-oem.css'))
+        .pipe(gulp.dest('./dist/'));
 });
-gulp.task('copy', done => {
-	fs.createReadStream('dist/leo-oem.js').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.js'));
-	fs.createReadStream('dist/leo-oem.css').pipe(fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.css'));
-	gutil.log("Finished copy");
-	done();
+gulp.task('copy', (done) => {
+    fs.createReadStream('dist/leo-oem.js').pipe(
+        fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.js')
+    );
+    fs.createReadStream('dist/leo-oem.css').pipe(
+        fs.createWriteStream('../server/rems/html/html/dwh-reports/leo-oem.css')
+    );
+    gutil.log('Finished copy');
+    done();
 });
 
 var buildOpts = {
-	entries: ['./js/dashboard.js'],
-	standalone: 'LEO',
-	transform: [babelify.configure({
-		//presets: ["env", "react"],
-		presets: ["react"],
-		plugins: ["transform-object-rest-spread"],
-		env: {
-			development: {
-				compact: false
-			}
-		}
-	  })]
+    entries: ['./js/dashboard.js'],
+    standalone: 'LEO',
+    transform: [
+        babelify.configure({
+            //presets: ["env", "react"],
+            presets: ['es2015', 'react', 'stage-1'],
+            plugins: [
+                ['transform-runtime', { polyfill: false, regenerator: true }],
+                'transform-decorators-legacy',
+            ],
+
+            // presets: [
+            //     [
+            //         '@babel/preset-env',
+            //         {
+            //             useBuiltIns: 'usage',
+            //             corejs: '3.6.5',
+            //         },
+            //     ],
+            //     '@babel/preset-env',
+            //     '@babel/preset-react',
+            // ],
+            // //['@babel/preset-env', '@babel/preset-react'],
+            // plugins: [
+            //     '@babel/plugin-transform-runtime',
+            //     ['@babel/plugin-proposal-class-properties', { loose: true }],
+            //     ['@babel/plugin-transform-async-to-generator'],
+            // ],
+
+            //[
+            //["@babel/plugin-transform-flow-strip-types"],
+            //['@babel/plugin-proposal-decorators', { legacy: true }],
+            //["@babel/plugin-proposal-class-properties", { "loose": true}]
+            //["@babel/plugin-proposal-decorators", { "legacy": true }],
+            //"@babel/plugin-proposal-class-properties",
+            //"@babel/plugin-proposal-object-rest-spread",
+            //"@babel/transform-react-constant-elements",
+            //"@babel/transform-react-inline-elements",
+            //"transform-react-remove-prop-types",
+            //"transform-react-pure-class-to-function",
+
+            //"@babel/transform-runtime",
+            //["babel-plugin-root-import", { "rootPathSuffix": "." }],
+            //["@babel/plugin-transform-runtime",{"regenerator":true}]
+            //],
+            env: {
+                development: {
+                    compact: false,
+                },
+            },
+        }),
+    ],
 };
 var opts = assign({}, watchify.args, buildOpts);
-gulp.task('js', function() {
-	return bundle(browserify(opts));
+gulp.task('js', function () {
+    return bundle(browserify(opts));
 });
 var b;
-gulp.task('watch', gulp.series(['less'], function() {
-	cdn = "../";
-	//cdn = "file:///home/darin/Documents/leo/leo/dashboard/";
+gulp.task(
+    'watch',
+    gulp.series(
+        ['sass'],
+        function () {
+            cdn = '../';
+            //cdn = "file:///home/darin/Documents/leo/leo/dashboard/";
 
-	b = watchify(browserify(opts));
-	b.on('update', function() {
-		bundle(b);
-	});
-	b.on('log', function(log) {
-		gutil.log("Finished '" + gutil.colors.green('build') + "'", log);
-		gulp.series(['js', 'less', 'copy'])();
-	});
-	gulp.watch('../css/**', gulp.series('less'));
-	return bundle(b);
-},['copy']));
+            b = watchify(browserify(opts));
+            b.on('update', function () {
+                bundle(b);
+            });
+            b.on('log', function (log) {
+                gutil.log(
+                    "Finished '" + gutil.colors.green('build') + "'",
+                    log
+                );
+                gulp.series(['js', 'sass', 'copy'])();
+            });
+            gulp.watch('./css/*', gulp.series(['sass', 'copy']));
+            return bundle(b);
+        },
+        ['copy']
+    )
+);
 
-gulp.task('build', gulp.series(['js', 'less', 'copy']));
+gulp.task('build', gulp.series(['js', 'sass', 'copy']));
 gulp.task('default', gulp.series('build'));
 
 /*
@@ -88,85 +144,133 @@ gulp.task('common', [], function() {
 });
 */
 
-
-gulp.task('putS3', gulp.series(["build"]), function(done) {
-	uploadCDNFile('leo-oem' + version + 'js', "./dist/leo-oem.js", false, function() {
-		uploadCDNFile('css/leo-oem' + version + 'css', "./dist/leo-oem.css", false, function() {
-			uploadCDNFile('font/fontello' + version + 'eot', "../font/fontello.eot", false, function() {
-				uploadCDNFile('font/fontello' + version + 'svg', "../font/fontello.svg", false, function() {
-					uploadCDNFile('font/fontello' + version + 'ttf', "../font/fontello.ttf", false, function() {
-						uploadCDNFile('font/fontello' + version + 'woff', "../font/fontello.woff", false, function() {
-							uploadCDNFile('font/fontello' + version + 'woff2', "../font/fontello.woff2", false, function() {
-								done();
-							});
-						});
-					});
-				});
-			});
-		});
-	});
+gulp.task('putS3', gulp.series(['build']), function (done) {
+    uploadCDNFile(
+        'leo-oem' + version + 'js',
+        './dist/leo-oem.js',
+        false,
+        function () {
+            uploadCDNFile(
+                'css/leo-oem' + version + 'css',
+                './dist/leo-oem.css',
+                false,
+                function () {
+                    uploadCDNFile(
+                        'font/fontello' + version + 'eot',
+                        '../font/fontello.eot',
+                        false,
+                        function () {
+                            uploadCDNFile(
+                                'font/fontello' + version + 'svg',
+                                '../font/fontello.svg',
+                                false,
+                                function () {
+                                    uploadCDNFile(
+                                        'font/fontello' + version + 'ttf',
+                                        '../font/fontello.ttf',
+                                        false,
+                                        function () {
+                                            uploadCDNFile(
+                                                'font/fontello' +
+                                                    version +
+                                                    'woff',
+                                                '../font/fontello.woff',
+                                                false,
+                                                function () {
+                                                    uploadCDNFile(
+                                                        'font/fontello' +
+                                                            version +
+                                                            'woff2',
+                                                        '../font/fontello.woff2',
+                                                        false,
+                                                        function () {
+                                                            done();
+                                                        }
+                                                    );
+                                                }
+                                            );
+                                        }
+                                    );
+                                }
+                            );
+                        }
+                    );
+                }
+            );
+        }
+    );
 });
 
-gulp.task('setLiveVersion', function() {
-	version = liveVersion;
+gulp.task('setLiveVersion', function () {
+    version = liveVersion;
 });
-gulp.task('setDevVersion', function() {
-	version = devVersion;
+gulp.task('setDevVersion', function () {
+    version = devVersion;
 });
 
 gulp.task('deploy', gulp.series(['setDevVersion', 'build', 'putS3']));
 gulp.task('deploylive', gulp.series(['setLiveVersion', 'build', 'putS3']));
 
 var s3 = new AWS.S3({
-	params: {
-		Bucket: 'cdnleo'
-	}
+    params: {
+        Bucket: 'cdnleo',
+    },
 });
 
 function uploadCDNFile(key, file, nocache, callback) {
-	var contentType = "application/x-javascript"
-	if (file.match(/\.css/)) {
-		contentType = "text/css";
-	}
+    var contentType = 'application/x-javascript';
+    if (file.match(/\.css/)) {
+        contentType = 'text/css';
+    }
 
-	var params = {
-		Key: key,
-		Body: fs.createReadStream(file),
-		ACL: "public-read",
-		ContentType: contentType
-	};
-	if (nocache) {
-		params.CacheControl = 'no-store, no-cache, must-revalidate, max-age=0';
-		params.Expires = new Date('2001-01-01T06:00:00');
-	} else {
-		params.CacheControl = 'max-age=315360000';
-		params.Expires = new Date('2025-01-01T06:00:00');
-	}
+    var params = {
+        Key: key,
+        Body: fs.createReadStream(file),
+        ACL: 'public-read',
+        ContentType: contentType,
+    };
+    if (nocache) {
+        params.CacheControl = 'no-store, no-cache, must-revalidate, max-age=0';
+        params.Expires = new Date('2001-01-01T06:00:00');
+    } else {
+        params.CacheControl = 'max-age=315360000';
+        params.Expires = new Date('2025-01-01T06:00:00');
+    }
 
-	s3.putObject(params, function(err, data) {
-		if (err) {
-			console.log(err, err.stack); // an error occurred
-		} else {
-			console.log(data);
-			callback(null, data);
-		}
-	});
+    s3.putObject(params, function (err, data) {
+        if (err) {
+            console.log(err, err.stack); // an error occurred
+        } else {
+            console.log(data);
+            callback(null, data);
+        }
+    });
 }
 
 function bundle(b) {
-	gutil.log("Starting '" + gutil.colors.green('build') + "'...");
-	//  return b.exclude("react/addons").exclude("react").transform('browserify-versionify', {
-	return b.transform('browserify-versionify', {
-		placeholder: '__VERSION__',
-		version: version,
-	}).transform('browserify-versionify', {
-		placeholder: '__CDN__',
-		version: cdn,
-	}).bundle().on('error', function(err) {
-		gutil.log(gutil.colors.red('Error: '), err.message);
-	}).on('log', function(err) {
-		console.log(err);
-	}).pipe(source('./js/leo-oem.js')).pipe(rename({
-		dirname: ''
-	})).pipe(gulp.dest('./dist/'));
+    gutil.log("Starting '" + gutil.colors.green('build') + "'...");
+    //  return b.exclude("react/addons").exclude("react").transform('browserify-versionify', {
+    return b
+        .transform('browserify-versionify', {
+            placeholder: '__VERSION__',
+            version: version,
+        })
+        .transform('browserify-versionify', {
+            placeholder: '__CDN__',
+            version: cdn,
+        })
+        .bundle()
+        .on('error', function (err) {
+            gutil.log(gutil.colors.red('Error: '), err.message);
+        })
+        .on('log', function (err) {
+            console.log(err);
+        })
+        .pipe(source('./js/leo-oem.js'))
+        .pipe(
+            rename({
+                dirname: '',
+            })
+        )
+        .pipe(gulp.dest('./dist/'));
 }

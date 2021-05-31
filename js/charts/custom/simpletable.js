@@ -23,7 +23,10 @@ class BasicRenderer extends React.Component {
             <div
                 style={{
                     width: '100%',
-                    height: '100%',
+                    height:
+                        window.simpleTableLineHeight != null
+                            ? window.simpleTableLineHeight
+                            : '100%',
                     paddingLeft: 0,
                     verticalAlign: 'middle',
                     lineHeight:
@@ -38,6 +41,8 @@ class BasicRenderer extends React.Component {
                             : this.props.colDef.colType == 'center'
                             ? 'center'
                             : 'left',
+                    display: 'block',
+                    alignItems: 'center',
                     ...extraStyles,
                 }}
                 dangerouslySetInnerHTML={{
@@ -153,9 +158,10 @@ class SimpleTable extends React.Component {
         this.preProcess(props);
     }
 
-    componentDidMount() {
+    agGridReady() {
+        // console.log('agGridReady');
         var scrolls = $(
-            '#leo-dashboard .simple-table-wrapper .table-body:not(.has-scroll-handler)'
+            '#leo-dashboard .simple-table-wrapper .ag-body-viewport'
         );
         var thisComponent = this;
         scrolls.each(function () {
@@ -451,16 +457,18 @@ class SimpleTable extends React.Component {
 
         init: function () {
             var sparkline = this;
+            console.log('sparkline-init');
 
             if (!sparkline.hasSparkline) {
                 sparkline.hasSparkline = true;
 
                 $('#leo-dashboard').on({
-                    'leo-after-render'(event, element) {
-                        sparkline.doChart(element);
+                    //'leo-after-render'
+                    'leo-after-aggrid-render'(event, element) {
+                        sparkline.doChart(element.find('.ag-body-viewport'));
                     },
                     'leo-after-sort'(event, element) {
-                        sparkline.doChart(element);
+                        sparkline.doChart(element.find('.ag-body-viewport'));
                     },
                 });
 
@@ -468,6 +476,9 @@ class SimpleTable extends React.Component {
                     var hasRenderToArg = typeof a === 'string' || a.nodeName,
                         options = arguments[hasRenderToArg ? 1 : 0],
                         defaultOptions = {
+                            exporting: {
+                                buttons: null
+                            }, // do not show the exporting hamburger menu on sparkcharts
                             chart: {
                                 renderTo:
                                     (options.chart && options.chart.renderTo) ||
@@ -566,16 +577,17 @@ class SimpleTable extends React.Component {
 
         doChart: function (element) {
             var sparkline = this;
+
             this.start = new Date();
             this.$tds = element.find('span[data-sparkline]');
-
-            var scrollTop = element.parent().scrollTop(),
-                scrollBottom = scrollTop + element.parent().height(),
+            /*
+            var scrollTop = element.scrollTop(),
+                scrollBottom = scrollTop + element.height(),
                 start = 0,
                 end = 0;
 
             this.$tds.each(function (index) {
-                var visiblePoint = $(this).position().top;
+                var visiblePoint = $(this).offset().top;
                 if (visiblePoint <= scrollTop) {
                     start = index;
                 }
@@ -588,6 +600,7 @@ class SimpleTable extends React.Component {
 
             this.$tds = this.$tds.slice(start, end);
             this.$tds = this.$tds.filter(':not([data-highcharts-chart])');
+            */
             this.fullLen = this.$tds.length;
 
             //if ($.now() - this.lastcall > 5000) {
@@ -922,12 +935,16 @@ class SimpleTable extends React.Component {
     }
 
     onFirstDataRendered = (params) => {
+        console.log('onFirstDataRendered');
         var allColumnIds = [];
         params.columnApi.getAllColumns().forEach(function (column) {
             allColumnIds.push(column.colId);
         });
         params.columnApi.autoSizeColumns(allColumnIds, true);
         params.api.sizeColumnsToFit();
+        this.props.element.trigger('leo-after-aggrid-render', [
+            $(this.props.element),
+        ]);
     };
 
     onFilterChanged = (params) => {
@@ -995,6 +1012,8 @@ class SimpleTable extends React.Component {
     };
 
     onGridReady = (params) => {
+        //console.log('onGridReady');
+        this.agGridReady();
         this.setState({ agGridObject: params });
         if (window.gridAPICallback) {
             window.gridAPICallback(params);
@@ -1211,7 +1230,8 @@ class SimpleTable extends React.Component {
                                             this.props.spec.title}
                                     </span>
                                     <i
-                                        className="icon-download"
+                                        className="fa fa-download"
+                                        style={{ cursor: 'pointer' }}
                                         onClick={this.exportData.bind(
                                             this,
                                             rows,

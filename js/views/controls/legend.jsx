@@ -3,12 +3,6 @@ var OptionActions = require('../../actions/options.js');
 var DashboardOptions = require('../../stores/options.js')();
 
 class Legend extends React.Component {
-    getDefaultProps() {
-        return {
-            group: 'default'
-        };
-    }
-
     componentDidMount() {
         DashboardOptions.on('togglelistchange', (e, group) => {
             this.forceUpdate();
@@ -53,5 +47,9 @@ class Legend extends React.Component {
         );
     }
 }
+
+Legend.defaultProps = {
+    group: 'default',
+};
 
 module.exports = Legend;
