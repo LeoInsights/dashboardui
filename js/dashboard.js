@@ -503,10 +503,13 @@ class DashboardFramework extends React.Component {
             // set up the current selection
             for (var i = 0; i < parsedMenu.length; i++) {
                 var item = parsedMenu[i];
-                console.log("comparing #" + item + " to " + window.location.hash);
-                if('#' + item.link == window.location.hash) {
+                //console.log("comparing #" + item + " to " + window.location.hash);
+                if('#' + item.link == window.location.hash || (i == 0 && !window.location.hash)) {
                     console.log("FOUND");
                     this.setState({ currentIcon: '<i class="' + item.icon + '"></i>', currentLabel: item.label });
+                    this.onDashboardMenuSelect(null, item);
+                    window.location.hash = '#' + item.link;
+                    break;
                 }
             }
         }
@@ -1094,7 +1097,7 @@ var self = (module.exports = $.extend({}, LEO, {
                     ? opts.disablePrintTitleBarButton
                     : false;
             window.reportTitle =
-                opts.reportTitle || "set LEO.init({ reportTitle: 'Title!' })!";
+                opts.reportTitle || "";
             window.helpOpen = opts.helpOpen || function () {};
             window.helpClose = opts.helpClose || function () {};
             window.openHelp = false;
@@ -1317,7 +1320,8 @@ var self = (module.exports = $.extend({}, LEO, {
                 .split('|');
             self.showDashboard(dashboard, params);
         } else {
-            $($('nav').find('a')[0]).trigger('click');
+            // WON'T WORK WITH HIDDEN SIDEBAR NOW: $($('nav').find('a')[0]).trigger('click');
+            console.log("ERROR - no hash value specified. Cannot decide which dashboard to show.");
         }
     },
     initChart: function (figure, filters) {

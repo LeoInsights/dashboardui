@@ -360,7 +360,6 @@ module.exports = function (element, chart, options, my) {
             }
         });
         Data.on('loaded', function (id) {
-            console.log("loaded");
             if (id === my.graphWatching.id) {
                 that.hideLoading();
                 element.trigger('leo-complete');
