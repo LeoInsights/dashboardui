@@ -457,7 +457,6 @@ class SimpleTable extends React.Component {
 
         init: function () {
             var sparkline = this;
-            console.log('sparkline-init');
 
             if (!sparkline.hasSparkline) {
                 sparkline.hasSparkline = true;
@@ -935,7 +934,6 @@ class SimpleTable extends React.Component {
     }
 
     onFirstDataRendered = (params) => {
-        console.log('onFirstDataRendered');
         var allColumnIds = [];
         params.columnApi.getAllColumns().forEach(function (column) {
             allColumnIds.push(column.colId);
@@ -1127,9 +1125,11 @@ class SimpleTable extends React.Component {
         }
 
         var gridOptions = {
-            enableSorting: true,
-            enableColResize: true,
-            enableFilter: true,
+            defaultColDef: {
+                sortable: true,
+                filter: true,
+                resizable: true,
+            },
             headerHeight:
                 window.simpleTableHeaderHeight != null
                     ? window.simpleTableHeaderHeight
@@ -1257,7 +1257,6 @@ class SimpleTable extends React.Component {
                         columnDefs={columnDefs} /* this.state.columnDefs */
                         rowData={rows}
                         gridOptions={gridOptions}
-                        enableColResize={true}
                         frameworkComponents={{
                             customPinnedRowRenderer: CustomPinnedRowRenderer,
                             basicRenderer: BasicRenderer,

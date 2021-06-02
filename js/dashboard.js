@@ -486,7 +486,7 @@ class DashboardFramework extends React.Component {
                 drawerOpen: false,
             },
             () => {
-                console.log('onDashboardMenuSelect!', this.state);
+                //console.log('onDashboardMenuSelect!', this.state);
             }
         );
     }
@@ -505,7 +505,6 @@ class DashboardFramework extends React.Component {
                 var item = parsedMenu[i];
                 //console.log("comparing #" + item + " to " + window.location.hash);
                 if('#' + item.link == window.location.hash || (i == 0 && !window.location.hash)) {
-                    console.log("FOUND");
                     this.setState({ currentIcon: '<i class="' + item.icon + '"></i>', currentLabel: item.label });
                     this.onDashboardMenuSelect(null, item);
                     window.location.hash = '#' + item.link;
@@ -1146,7 +1145,6 @@ var self = (module.exports = $.extend({}, LEO, {
             window.globalTitleBar = true;
         }
 
-        console.log('element.find(leo-dashboard-framework)');
         element.find('#leo-dashboard-framework').each(function (i, dashboard) {
             var menuList = dashboard.innerHTML;
             menuList = $(menuList).text(); // remove <script ...> </script> tags around menus
