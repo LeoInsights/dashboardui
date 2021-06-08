@@ -137,6 +137,7 @@ class SimpleTable extends React.Component {
         sortDir: null,
         startRow: 0,
         agGridObject: null,
+        loading: false
     };
 
     constructor(props) {
@@ -154,7 +155,15 @@ class SimpleTable extends React.Component {
         this.preProcess();
     }
 
+    componentDidMount() {
+        //console.log("figure:",document.querySelector('figure'));
+        $('figure').on('leo-loading', function() {
+            this.setState({ loading: true });
+        }.bind(this));
+    }
+
     componentWillReceiveProps(props) {
+        this.setState({ loading: false });
         this.preProcess(props);
     }
 
@@ -1096,8 +1105,14 @@ class SimpleTable extends React.Component {
             totals2[0][i] = totals[i] ? totals[i] : '';
         }
 
+        if (this.state.loading)  {
+            return (<div style={{ height:'100%', width: '100%', padding: 8 }}>
+                Loading...
+            </div>);
+        }
+
         if (this.props.data.error || this.rows.length == 0) {
-            return <span> {this.props.spec.onEmpty || 'No Data'} </span>;
+            return <div style={{ height:'100%', width: '100%', padding: 8 }}> {this.props.spec.onEmpty || 'No Data'} </div>;
         }
 
         let className = 'leo-simpletable';
