@@ -310,7 +310,7 @@ module.exports = function (element, chart, options, my) {
     that.showLoading = function () {
         element.append(
             $(
-                '<div style="display:flex; width:100%; height: 100%; align-items: center; text-align: center;"/>'
+                '<div id="loadingDiv" style="display:flex; width:100%; height: 100%; align-items: center; text-align: center;"/>'
             ).append(
                 '<i style="color: #666666; width: 100%" class="fa fa-spinner fa-spin fa-2x"></i>'
             )
@@ -319,6 +319,7 @@ module.exports = function (element, chart, options, my) {
 
     that.hideLoading = function () {
         element.find('.leo-charts-loading').remove();
+        element.find('#loadingDiv').remove();
     };
 
     that.showNeedsFilter = function () {
